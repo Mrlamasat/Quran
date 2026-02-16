@@ -15,7 +15,13 @@
 body{margin:0;font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);}
 header{text-align:center;padding:25px;font-size:26px;font-weight:bold;background:#0f172a;border-bottom:1px solid #1f2937;}
 .prayer,#cityName,#prayerTable{text-align:center;padding:10px;color:var(--gold);font-size:14px;}
-.countdown{text-align:center;font-size:18px;padding:10px;background:#111827;color:var(--gold);font-weight:bold;margin:10px 0;}
+.countdown{
+  text-align:center;font-size:18px;padding:10px;background:#111827;color:var(--gold);
+  font-weight:bold;margin:10px 0;
+  border-radius:8px;
+  box-shadow: 0 0 10px var(--gold);
+  transition: all 0.3s;
+}
 .reciter{margin-bottom:30px;text-align:center;}
 .reciter h3{color:var(--gold);}
 iframe{width:100%;max-width:825px;border:none;border-radius:12px;}
@@ -35,17 +41,17 @@ footer{text-align:center;padding:20px;font-size:13px;color:#94a3b8;margin-bottom
 
 <div class="reciter">
   <h3>ماهر المعيقلي</h3>
-  <iframe src="https://www.tvquran.com/ar/recitation/82/collection_embeddable" height="670" allowtransparency="1" scrolling="no"></iframe>
+  <iframe src="https://www.tvquran.com/ar/recitation/82/collection_embeddable" id="iframe1" allowtransparency="1" scrolling="no"></iframe>
 </div>
 
 <div class="reciter">
   <h3>عبدالولي الاركاني</h3>
-  <iframe src="https://www.tvquran.com/ar/recitation/6/collection_embeddable" height="670" allowtransparency="1" scrolling="no"></iframe>
+  <iframe src="https://www.tvquran.com/ar/recitation/6/collection_embeddable" id="iframe2" allowtransparency="1" scrolling="no"></iframe>
 </div>
 
 <div class="reciter">
   <h3>ياسر الدوسري - الاعراف</h3>
-  <iframe src="https://www.tvquran.com/ar/selection/2886/embeddable" height="280" allowtransparency="1" scrolling="no"></iframe>
+  <iframe src="https://www.tvquran.com/ar/selection/2886/embeddable" id="iframe3" allowtransparency="1" scrolling="no"></iframe>
 </div>
 
 <footer>جميع حقوق التلاوات محفوظة لأصحابها</footer>
@@ -122,7 +128,29 @@ function startCountdown(){
   },1000);
 }
 
-getLocation();
+// ======= ضبط ارتفاع iframe تلقائي =======
+function adjustIframes(){
+  const winHeight = window.innerHeight;
+  const iframes = [document.getElementById("iframe1"), document.getElementById("iframe2"), document.getElementById("iframe3")];
+  iframes.forEach((frame,index)=>{
+    // نضع ارتفاع مختلف حسب النوع: البث الطويل 670، القصير 280، لكن يتناسب مع الشاشة
+    if(index===2){ // ياسر الدوسري
+      frame.style.height = Math.min(400, winHeight*0.5) + "px";
+    } else {
+      frame.style.height = Math.min(670, winHeight*0.8) + "px";
+    }
+  });
+}
+
+window.onload = function(){
+  getLocation();
+  adjustIframes();
+}
+
+window.onresize = function(){
+  adjustIframes();
+}
+
 </script>
 
 </body>
