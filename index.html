@@ -92,7 +92,7 @@ function getMonthName(){
 const monthKey = getCurrentMonthKey();
 document.getElementById("monthTitle").innerText = "شهر: " + getMonthName();
 
-// رسم الجدول
+// دالة رسم الجدول بشكل آمن
 function renderTable(data){
     const tableBody = document.getElementById("tableBody");
     tableBody.innerHTML = '';
@@ -148,9 +148,9 @@ function submitCode(memberId){
     });
 }
 
-// الاستماع للتحديثات في Firebase
+// الاستماع للتحديثات وعرض جميع الأسماء دائماً
 db.ref('payments/' + monthKey).on('value', snapshot=>{
-    renderTable(snapshot.val() || {});
+    renderTable(snapshot.val());
 });
 </script>
 
