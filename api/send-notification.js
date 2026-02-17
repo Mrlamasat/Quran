@@ -1,16 +1,24 @@
 const https = require("https");
 
 module.exports = (req, res) => {
-  // إعدادات للسماح للموقع بالاتصال بالـ API
+  // إعدادات الوصول للسماح لموقعك بالاتصال
   res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method !== "POST") return res.status(200).send("Server is running");
+  // إذا كان الطلب ليس POST (مثل فحص السيرفر)
+  if (req.method !== "POST") {
+    return res.status(200).send("Server is ready");
+  }
 
+  // تجهيز نص الرسالة من الطلب
+  const messageText = req.body && req.body.message ? req.body.message : "تنبيه من Spaarkring";
+
+  // بيانات OneSignal (المفاتيح محفورة لضمان العمل)
   const data = JSON.stringify({
     app_id: "564eb270-ccb3-428f-b9f8-f162d56321c4",
     included_segments: ["All"],
-    contents: { ar: req.body.message || "تنبيه جديد", en: req.body.message || "New Alert" }
+    contents: { ar: messageText, en: messageText }
   });
 
   const options = {
@@ -24,11 +32,18 @@ module.exports = (req, res) => {
   };
 
   const request = https.request(options, (response) => {
-    response.on("data", () => {});
-    response.on("end", () => res.status(200).json({ sent: true }));
+    let responseBody = "";
+    response.on("data", (chunk) => { responseBody += chunk; });
+    response.on("end", () => {
+      // إرجاع النتيجة للموقع
+      res.status(200).json({ success: true, status: response.statusCode });
+    });
   });
 
-  request.on("error", (e) => res.status(500).json({ error: e.message }));
+  request.on("error", (e) => {
+    res.status(500).json({ error: e.message });
+  });
+
   request.write(data);
   request.end();
 };
