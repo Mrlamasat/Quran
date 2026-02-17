@@ -1,100 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spaarkring - Secure</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<style>
+body { font-family: 'Segoe UI', sans-serif; background:#f0f4f8; padding:10px; text-align:center; }
+.container { max-width:100%; margin:auto; background:white; padding:20px; border-radius:20px; box-shadow:0 10px 20px rgba(0,0,0,0.1); border-top:8px solid #1a73e8; }
+h1 { color:#1a73e8; margin-bottom:15px; font-size:2em; }
+.payment-notice { background:#e8f0fe; border:1px solid #1a73e8; padding:15px; border-radius:12px; margin-bottom:20px; font-weight:bold; }
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+th,td { padding:10px; border-bottom:1px solid #eee; }
+th { background:#f8f9fa; }
+.paid { color:#28a745; font-weight:bold; }
+.not-paid { color:#dc3545; font-weight:bold; }
+input { width:60px; padding:5px; text-align:center; }
+button { background:#34a853; color:white; border:none; padding:6px 10px; border-radius:5px; cursor:pointer; }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h1>Spaarkring</h1>
+
+<div class="payment-notice">
+📢 المبلغ المطلوب: 400 يورو <br>
+📅 موعد الدفع: 22 من كل شهر
+</div>
+
+<h3 id="monthTitle"></h3>
+
+<table>
+<thead>
+<tr>
+<th>الاسم</th>
+<th>الحالة</th>
+<th>التاريخ</th>
+<th>تأكيد</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+
+</div>
+
 <script>
-    const firebaseConfig = {
-        apiKey: "YOUR_KEY",
-        authDomain: "YOUR_DOMAIN",
-        databaseURL: "YOUR_DB_URL",
-        projectId: "YOUR_ID",
-        storageBucket: "YOUR_BUCKET",
-        messagingSenderId: "YOUR_MSG_ID",
-        appId: "YOUR_APP_ID"
-    };
+const firebaseConfig = {
+    apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4qU4v170M",
+    authDomain: "jamia-app-5bd27.firebaseapp.com",
+    databaseURL: "https://jamia-app-5bd27-default-rtdb.europe-west1.firebasedatabase.app/",
+    projectId: "jamia-app-5bd27",
+    storageBucket: "jamia-app-5bd27.appspot.com",
+    messagingSenderId: "870308712173",
+    appId: "1:870308712173:web:be101df99fef2085b344a2"
+};
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-    const members = [
-        { id: 1, name: "محسن" }, { id: 2, name: "سليم" }, { id: 3, name: "أبو محمد" },
-        { id: 4, name: "مشتاق" }, { id: 5, name: "رضوان" }, { id: 6, name: "عبدالرحمن" },
-        { id: 7, name: "علي" }, { id: 8, name: "أبو هتان" }, { id: 9, name: "أبو خالد" },
-        { id: 10, name: "حمزة" }
-    ];
+const members = [
+{ id:1, name:"محسن" },
+{ id:2, name:"سليم" },
+{ id:3, name:"أبو محمد" },
+{ id:4, name:"مشتاق" },
+{ id:5, name:"رضوان" },
+{ id:6, name:"عبدالرحمن" },
+{ id:7, name:"علي" },
+{ id:8, name:"أبو هتان" },
+{ id:9, name:"أبو خالد" },
+{ id:10, name:"حمزة" }
+];
 
-    function getCurrentMonthKey() {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        return `${year}-${month}`;
-    }
+function getCurrentMonthKey(){
+    const now=new Date();
+    const year=now.getFullYear();
+    const month=String(now.getMonth()+1).padStart(2,'0');
+    return `${year}-${month}`;
+}
 
-    function showAlert(msg) {
-        document.getElementById('alertMessage').innerText = msg;
-        document.getElementById('customAlert').style.display = 'block';
-        document.getElementById('overlay').style.display = 'block';
-    }
+function getMonthName(){
+    const now=new Date();
+    return now.toLocaleDateString('ar-EG',{year:'numeric',month:'long'});
+}
 
-    function closeAlert() {
-        document.getElementById('customAlert').style.display = 'none';
-        document.getElementById('overlay').style.display = 'none';
-    }
+const monthKey=getCurrentMonthKey();
+document.getElementById("monthTitle").innerText="شهر: "+getMonthName();
 
-    function renderTable(paidStatus) {
-        const tableBody = document.getElementById('tableBody');
-        tableBody.innerHTML = '';
+function renderTable(data){
+    const tableBody=document.getElementById("tableBody");
+    tableBody.innerHTML='';
 
-        members.forEach(member => {
-            const isPaid = paidStatus[member.id]?.status === true;
-            const payDate = isPaid ? paidStatus[member.id].date : '-';
+    members.forEach(member=>{
+        const isPaid=data[member.id]?.status===true;
+        const payDate=isPaid?data[member.id].date:'-';
 
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${member.name}</strong></td>
-                <td>
-                    <span class="${isPaid ? 'paid' : 'not-paid'}">
-                        ${isPaid ? 'مدفوع' : 'غير مدفوع'}
-                    </span>
-                </td>
-                <td>${payDate}</td>
-                <td>
-                    ${isPaid ? '✔️' : `
-                        <input type="password" id="code-${member.id}" placeholder="***">
-                        <button onclick="submitCode(${member.id})">تأكيد</button>
-                    `}
-                </td>
-            `;
-            tableBody.appendChild(tr);
-        });
-    }
-
-    function submitCode(memberId) {
-        const input = document.getElementById('code-' + memberId);
-        const code = input.value.trim();
-
-        if (!code) {
-            showAlert("❌ أدخل الكود");
-            return;
-        }
-
-        const monthKey = getCurrentMonthKey();
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('ar-EG');
-
-        db.ref(`payments/${monthKey}/${memberId}`).set({
-            status: true,
-            date: dateStr,
-            code: code
-        })
-        .then(() => {
-            showAlert("✅ تم تسجيل الدفع لهذا الشهر");
-        })
-        .catch(() => {
-            showAlert("❌ الكود غير صحيح");
-            input.value = '';
-        });
-    }
-
-    const monthKey = getCurrentMonthKey();
-
-    db.ref('payments/' + monthKey).on('value', snapshot => {
-        renderTable(snapshot.val() || {});
+        const tr=document.createElement("tr");
+        tr.innerHTML=`
+            <td><strong>${member.name}</strong></td>
+            <td class="${isPaid?'paid':'not-paid'}">
+                ${isPaid?'مدفوع':'غير مدفوع'}
+            </td>
+            <td>${payDate}</td>
+            <td>
+                ${isPaid?'✔️':`
+                    <input type="password" id="code-${member.id}" placeholder="***">
+                    <button onclick="submitCode(${member.id})">تأكيد</button>
+                `}
+            </td>
+        `;
+        tableBody.appendChild(tr);
     });
+}
+
+function submitCode(memberId){
+    const input=document.getElementById('code-'+memberId);
+    const code=input.value.trim();
+
+    if(!code){
+        alert("أدخل الكود");
+        return;
+    }
+
+    const dateStr=new Date().toLocaleDateString('ar-EG');
+
+    db.ref(`payments/${monthKey}/${memberId}`).set({
+        status:true,
+        date:dateStr,
+        code:code
+    })
+    .then(()=>{
+        alert("تم تسجيل الدفع");
+    })
+    .catch(()=>{
+        alert("الكود غير صحيح");
+        input.value='';
+    });
+}
+
+db.ref('payments/'+monthKey).on('value',snapshot=>{
+    renderTable(snapshot.val()||{});
+});
 </script>
+
+</body>
+</html>
