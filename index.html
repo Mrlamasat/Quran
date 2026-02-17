@@ -10,7 +10,9 @@
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
-          appId: "ضع_هنا_APP_ID_الخاص_بك", // استبدله بـ ID التطبيق الفعلي من لوحة OneSignal
+          appId: "ضع_هنا_APP_ID_الخاص_بك", 
+          safari_web_id: "web.onesignal.auto.5bd27...", // اختياري لمتصفح سفاري
+          notifyButton: { enable: true },
         });
       });
     </script>
@@ -20,7 +22,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; text-align: center; direction: rtl; margin: 0; padding: 10px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; text-align: center; direction: rtl; margin: 0; padding: 10px; }
         .container { max-width: 500px; margin: 10px auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h1 { color: #1a73e8; cursor: pointer; margin-bottom: 5px; }
         .status-card { background: #e8f4fd; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; border-right: 5px solid #1a73e8; }
@@ -29,15 +31,15 @@
         .paid { color: #27ae60; font-weight: bold; }
         .not-paid { color: #e74c3c; font-weight: bold; }
         .btn-verify { background: #27ae60; color: white; border: none; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .custom-alert { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
-        .alert-content { background-color: white; margin: 30% auto; padding: 25px; border-radius: 15px; width: 80%; max-width: 350px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
-        .alert-btn { background: #1a73e8; color: white; border: none; padding: 10px 30px; border-radius: 8px; cursor: pointer; margin-top: 20px; font-weight: bold; width: 100%; }
-        .code-input { width: 60px; text-align: center; padding: 5px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; }
         #adminPanel { display: none; margin-top: 30px; border-top: 2px dashed #dc3545; padding: 15px; background: #fffdfd; border-radius: 10px; }
-        .admin-input { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
+        .admin-input { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; display: block; margin-left: auto; margin-right: auto; }
         .btn-reset { background: #c0392b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .custom-alert { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
+        .alert-content { background-color: white; margin: 30% auto; padding: 25px; border-radius: 15px; width: 80%; max-width: 350px; }
+        .alert-btn { background: #1a73e8; color: white; border: none; padding: 10px 30px; border-radius: 8px; cursor: pointer; margin-top: 20px; font-weight: bold; width: 100%; }
+        .code-input { width: 60px; text-align: center; padding: 5px; border: 1px solid #ccc; border-radius: 5px; }
         .payout-container { background:#f9fffb; padding:15px; border-radius:10px; margin-top:30px; border: 1px solid #d1fae5; }
-        .toggle-btn { background: #3182ce; color: white; border: none; padding: 3px 6px; border-radius: 3px; font-size: 0.7em; cursor: pointer; }
+        .toggle-btn { background: #3182ce; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -53,7 +55,7 @@
     </table>
 
     <div class="payout-container">
-        <h3 style="color:#2d3748; margin-top:0;">💰 سجل استلام المبالغ (4000€)</h3>
+        <h3>💰 سجل استلام المبالغ (4000€)</h3>
         <table>
             <thead><tr id="payoutHeader"><th>الاسم</th><th>حالة الاستلام</th></tr></thead>
             <tbody id="payoutTable"></tbody>
@@ -65,25 +67,25 @@
             <h4 style="color:#c0392b;">دخول المسؤول</h4>
             <input type="email" id="email" placeholder="الإيميل" class="admin-input">
             <input type="password" id="pass" placeholder="كلمة المرور" class="admin-input">
-            <button onclick="loginAdmin()" style="background:#2c3e50; color:white; width:95%; padding:10px; border:none; border-radius:5px;">دخول</button>
+            <button onclick="loginAdmin()" style="background:#2c3e50; color:white; width:100%; padding:10px; border:none; border-radius:5px; cursor:pointer;">دخول</button>
         </div>
         <div id="adminControls" style="display:none;">
-            <p style="color:#27ae60; font-weight:bold;">مرحباً يا المسؤول</p>
+            <p style="color:#27ae60; font-weight:bold;">مرحباً يا محمد</p>
             <button onclick="resetMonthData()" class="btn-reset">⚠️ تصفير سجل الشهر الجديد</button>
-            <button onclick="logoutAdmin()" style="background:#95a5a6; color:white; border:none; padding:8px; border-radius:5px; margin-top:20px; width:95%;">خروج</button>
+            <button onclick="logoutAdmin()" style="background:#95a5a6; color:white; border:none; padding:8px; border-radius:5px; margin-top:20px; width:100%; cursor:pointer;">خروج</button>
         </div>
     </div>
 </div>
 
 <div id="myAlert" class="custom-alert">
     <div class="alert-content">
-        <p id="alertMsg" style="color: #333; font-size: 1.1em; line-height: 1.5;"></p>
+        <p id="alertMsg"></p>
         <button onclick="closeAlert()" class="alert-btn">موافق</button>
     </div>
 </div>
 
 <script>
-/* Firebase config */
+// 1. Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4xFy5ylz9I",
     authDomain: "jamia-app-5bd27.firebaseapp.com",
@@ -99,79 +101,104 @@ const auth = firebase.auth();
 
 const members = ["محسن","سليم","أبو محمد","مشتاق","رضوان","حمزة","علي","أبو هتان","أبو خالد","عبدالرحمن"];
 const monthKey = new Date().getFullYear() + "-" + (new Date().getMonth()+1).toString().padStart(2,'0');
-document.getElementById('monthLabel').innerText = "سجل شهر: "+new Date().toLocaleDateString('ar-EG',{month:'long', year:'numeric'});
+document.getElementById('monthLabel').innerText = "سجل شهر: " + new Date().toLocaleDateString('ar-EG',{month:'long', year:'numeric'});
 
-function showAlert(msg){ document.getElementById('alertMsg').innerHTML=msg; document.getElementById('myAlert').style.display='block'; }
+// 2. Alert Functions
+function showAlert(msg){ document.getElementById('alertMsg').innerText=msg; document.getElementById('myAlert').style.display='block'; }
 function closeAlert(){ document.getElementById('myAlert').style.display='none'; }
 
-auth.onAuthStateChanged(user=>{
-    if(!user) auth.signInAnonymously();
-    const isAdmin = user && !user.isAnonymous && user.email === "Mohammeddalmohsen@gmail.com";
-    document.getElementById('loginForm').style.display = isAdmin?'none':'block';
-    document.getElementById('adminControls').style.display = isAdmin?'block':'none';
-    loadData();
+// 3. Auth Listener (لإظهار لوحة التحكم)
+auth.onAuthStateChanged(user => {
+    if (!user) {
+        auth.signInAnonymously();
+        return;
+    }
+    const isAdmin = !user.isAnonymous && user.email === "Mohammeddalmohsen@gmail.com";
+    document.getElementById('loginForm').style.display = isAdmin ? 'none' : 'block';
+    document.getElementById('adminControls').style.display = isAdmin ? 'block' : 'none';
+    loadData(isAdmin);
 });
 
-function loadData(){
-    db.ref().on('value', snap=>{
+// 4. Load Data
+function loadData(isAdmin) {
+    db.ref().on('value', snap => {
         const data = snap.val() || {};
-        const payments = data.payments ? (data.payments[monthKey] || {}) : {};
+        const payments = (data.payments && data.payments[monthKey]) ? data.payments[monthKey] : {};
         const received = data.received_totals || {};
-        const user = auth.currentUser;
-        const isAdmin = user && !user.isAnonymous && user.email === "Mohammeddalmohsen@gmail.com";
 
-        let h='';
-        members.forEach((name,i)=>{
-            const id=i+1;
+        // تحديث جدول الأعضاء
+        let h = '';
+        members.forEach((name, i) => {
+            const id = i + 1;
             const paid = payments[id] && payments[id].status;
-            h+=`<tr><td><b>${name}</b></td><td class="${paid?'paid':'not-paid'}">${paid?'✅':'❌'}</td>
-            <td>${paid?'✔️':`<input type="number" id="in-${id}" class="code-input"> <button onclick="verify(${id},'${name}')" class="btn-verify">OK</button>`}</td></tr>`;
+            h += `<tr>
+                <td><b>${name}</b></td>
+                <td class="${paid ? 'paid' : 'not-paid'}">${paid ? '✅' : '❌'}</td>
+                <td>${paid ? '✔️' : `<input type="number" id="in-${id}" class="code-input"> <button onclick="verify(${id},'${name}')" class="btn-verify">OK</button>`}</td>
+            </tr>`;
         });
-        document.getElementById('memberTable').innerHTML=h;
+        document.getElementById('memberTable').innerHTML = h;
 
-        let ph='';
-        members.forEach((name,i)=>{
-            const id=i+1;
-            const rec = received[id]===true;
-            ph+=`<tr><td>${name}</td><td class="${rec?'paid':'not-paid'}">${rec?'تم ✅':'لم يستلم'}</td>
-            ${isAdmin?`<td><button onclick="toggleRec(${id},${rec})" class="toggle-btn">تبديل</button></td>`:''}</tr>`;
+        // تحديث جدول الاستلام
+        let ph = '';
+        members.forEach((name, i) => {
+            const id = i + 1;
+            const rec = received[id] === true;
+            ph += `<tr>
+                <td>${name}</td>
+                <td class="${rec ? 'paid' : 'not-paid'}">${rec ? 'تم ✅' : 'لم يستلم'}</td>
+                ${isAdmin ? `<td><button onclick="toggleRec(${id},${rec})" class="toggle-btn">تبديل</button></td>` : ''}
+            </tr>`;
         });
-        document.getElementById('payoutTable').innerHTML=ph;
+        document.getElementById('payoutTable').innerHTML = ph;
     });
 }
 
-function verify(id,name){
-    const codeInput = document.getElementById('in-'+id).value;
-    if(!codeInput) return showAlert("❌ الرجاء إدخال الكود أولاً");
-    db.ref('secret_codes/'+id).once('value').then(snap=>{
-        if(String(codeInput) === String(snap.val())){
-            db.ref(`payments/${monthKey}/${id}`).set({status:true, date: new Date().toLocaleDateString('ar-EG')});
-            showAlert(`✅ تم تأكيد الكود الخاص بـ ${name}`);
-            sendPushNotification(`✅ تم دفع القسط من قبل: ${name}`);
+// 5. Logic Functions
+function verify(id, name) {
+    const val = document.getElementById('in-' + id).value;
+    if (!val) return showAlert("❌ أدخل الكود أولاً");
+    db.ref('secret_codes/' + id).once('value').then(snap => {
+        if (String(val) === String(snap.val())) {
+            db.ref(`payments/${monthKey}/${id}`).set({ status: true, date: new Date().toLocaleDateString() });
+            showAlert(`✅ تم التأكيد لـ ${name}`);
+            sendPushNotification(`✅ دفع جديد: ${name}`);
         } else {
-            showAlert("❌ الكود غير صحيح.");
+            showAlert("❌ الكود غير صحيح");
         }
     });
 }
 
-function sendPushNotification(msg) {
-    fetch('/api/send-notification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg })
-    }).catch(err => console.error("Notification Error:", err));
+async function sendPushNotification(msg) {
+    try {
+        await fetch('/api/send-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg })
+        });
+    } catch (e) { console.error("Notification failed", e); }
 }
 
-function resetMonthData(){ 
-    if(confirm("تصفير الشهر؟")){
+function loginAdmin() {
+    const e = document.getElementById('email').value;
+    const p = document.getElementById('pass').value;
+    auth.signInWithEmailAndPassword(e, p)
+        .then(() => showAlert("مرحباً بك"))
+        .catch(err => showAlert("خطأ: " + err.message));
+}
+
+function logoutAdmin() { auth.signOut().then(() => location.reload()); }
+function toggleAdminView() { 
+    const p = document.getElementById('adminPanel');
+    p.style.display = (p.style.display === 'block') ? 'none' : 'block';
+}
+function resetMonthData() {
+    if (confirm("هل تريد تصفير بيانات الشهر الحالي؟")) {
         db.ref(`payments/${monthKey}`).remove();
-        sendPushNotification("📅 تم تصفير السجل لشهر جديد");
+        sendPushNotification("📅 تم تصفير سجل الشهر");
     }
 }
-function toggleRec(id,s){ db.ref(`received_totals/${id}`).set(!s); }
-function toggleAdminView(){ const p=document.getElementById('adminPanel'); p.style.display=(p.style.display==='block')?'none':'block'; }
-function loginAdmin(){ auth.signInWithEmailAndPassword(document.getElementById('email').value,document.getElementById('pass').value).catch(e=>showAlert(e.message)); }
-function logoutAdmin(){ auth.signOut().then(()=>location.reload()); }
+function toggleRec(id, s) { db.ref(`received_totals/${id}`).set(!s); }
 </script>
 </body>
 </html>
