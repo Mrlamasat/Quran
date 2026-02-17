@@ -57,7 +57,7 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 <h4 style="color:#c0392b;">دخول المسؤول</h4>
 <input type="email" id="email" placeholder="الإيميل" class="admin-input">
 <input type="password" id="pass" placeholder="كلمة المرور" class="admin-input">
-<button onclick="loginAdmin()" style="background:#2c3e50; color:white; width:95%; padding:10px; border:none; border-radius:5px;">دخول</button>
+<button type="button" onclick="loginAdmin()" style="background:#2c3e50; color:white; width:95%; padding:10px; border:none; border-radius:5px;">دخول</button>
 </div>
 <div id="adminControls" style="display:none;">
 <p style="color:#27ae60; font-weight:bold;">مرحباً يا المسؤول</p>
@@ -169,7 +169,24 @@ function resetMonthData(){
 }
 function toggleRec(id,s){ db.ref(`received_totals/${id}`).set(!s); }
 function toggleAdminView(){ const p=document.getElementById('adminPanel'); p.style.display=(p.style.display==='block')?'none':'block'; }
-function loginAdmin(){ auth.signInWithEmailAndPassword(document.getElementById('email').value,document.getElementById('pass').value).catch(e=>showAlert(e.message)); }
+
+/* تسجيل الدخول للمسؤول */
+function loginAdmin(){
+    const email = document.getElementById('email').value;
+    const pass = document.getElementById('pass').value;
+    if(!email || !pass) return showAlert("❌ الرجاء إدخال البريد وكلمة المرور");
+
+    auth.signInWithEmailAndPassword(email, pass)
+        .then(userCredential => {
+            console.log("تم تسجيل الدخول:", userCredential.user.email);
+            showAlert("✅ تم تسجيل الدخول بنجاح");
+        })
+        .catch(e=>{
+            console.error("خطأ في تسجيل الدخول:", e.message);
+            showAlert("❌ " + e.message);
+        });
+}
+
 function logoutAdmin(){ auth.signOut().then(()=>location.reload()); }
 
 /* إرسال الإشعارات */
