@@ -5,20 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spaarkring - Dashboard</title>
 
-<!-- OneSignal SDK -->
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "564eb270-ccb3-428f-b9f8-f162d56321c4",
-    });
-    OneSignal.showSlidedownPrompt(); // طلب إذن الإشعارات تلقائيًا
-    window.OneSignal = OneSignal;
-  });
-</script>
-
-<!-- Firebase v8 -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -88,6 +74,7 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 </div>
 
 <script>
+/* Firebase config */
 const firebaseConfig = {
     apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4xFy5ylz9I",
     authDomain: "jamia-app-5bd27.firebaseapp.com",
@@ -101,33 +88,20 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 
-const members = ["محسن", "سليم", "أبو محمد", "مشتاق", "رضوان", "حمزة", "علي", "أبو هتان", "أبو خالد", "عبدالرحمن"];
-const monthKey = new Date().getFullYear() + "-" + (new Date().getMonth() + 1).toString().padStart(2, '0');
-document.getElementById('monthLabel').innerText = "سجل شهر: " + new Date().toLocaleDateString('ar-EG', {month:'long', year:'numeric'});
+/* إعدادات عامة */
+const members = ["محسن","سليم","أبو محمد","مشتاق","رضوان","حمزة","علي","أبو هتان","أبو خالد","عبدالرحمن"];
+const monthKey = new Date().getFullYear() + "-" + (new Date().getMonth()+1).toString().padStart(2,'0');
+document.getElementById('monthLabel').innerText = "سجل شهر: "+new Date().toLocaleDateString('ar-EG',{month:'long', year:'numeric'});
 
-function showAlert(msg){ document.getElementById('alertMsg').innerHTML = msg; document.getElementById('myAlert').style.display = 'block'; }
-function closeAlert(){ document.getElementById('myAlert').style.display = 'none'; }
+/* Alert */
+function showAlert(msg){ document.getElementById('alertMsg').innerHTML=msg; document.getElementById('myAlert').style.display='block'; }
+function closeAlert(){ document.getElementById('myAlert').style.display='none'; }
 
-function sendPushNotification(msg){
-    fetch('https://onesignal.com/api/v1/notifications', {
-        method:'POST',
-        headers:{
-            'Content-Type':'application/json',
-            'Authorization':'Basic os_v2_app_kzhle4gmwnbi7opy6frnkyzbyrqitvovpu2ugku5pdtd33igz22ayihzxibmlbr7quywkkczb4hchcca23c5ed2bhsyyikzz7b6k6ui'
-        },
-        body: JSON.stringify({
-            app_id: "564eb270-ccb3-428f-b9f8-f162d56321c4",
-            included_segments:["Subscribed Users"],
-            contents: {"ar": msg},
-            headings: {"ar": "تنبيه Spaarkring"}
-        })
-    });
-}
-
-auth.onAuthStateChanged(user => {
-    const isAdmin = user && !user.isAnonymous;
-    document.getElementById('loginForm').style.display = isAdmin ? 'none' : 'block';
-    document.getElementById('adminControls').style.display = isAdmin ? 'block' : 'none';
+/* تحميل البيانات */
+auth.onAuthStateChanged(user=>{
+    const isAdmin = user && !user.isAnonymous && user.email==="your-admin-email@gmail.com";
+    document.getElementById('loginForm').style.display = isAdmin?'none':'block';
+    document.getElementById('adminControls').style.display = isAdmin?'block':'none';
     const header = document.getElementById('payoutHeader');
     header.innerHTML = `<th>الاسم</th><th>حالة الاستلام</th>${isAdmin?'<th>تحكم</th>':''}`;
     if(!user) auth.signInAnonymously();
@@ -135,48 +109,56 @@ auth.onAuthStateChanged(user => {
 });
 
 function loadData(){
-    db.ref().on('value', snap => {
+    db.ref().on('value', snap=>{
         const data = snap.val() || {};
         const payments = data.payments ? (data.payments[monthKey] || {}) : {};
         const received = data.received_totals || {};
-        const isAdmin = auth.currentUser && !auth.currentUser.isAnonymous;
+        const isAdmin = auth.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.email==="your-admin-email@gmail.com";
 
         let h='';
         members.forEach((name,i)=>{
             const id=i+1;
             const paid = payments[id] && payments[id].status;
-            h += `<tr><td><b>${name}</b></td><td class="${paid?'paid':'not-paid'}">${paid?'✅':'❌'}</td>
+            h+=`<tr><td><b>${name}</b></td><td class="${paid?'paid':'not-paid'}">${paid?'✅':'❌'}</td>
             <td>${paid?'✔️':`<input type="number" id="in-${id}" class="code-input"> <button onclick="verify(${id},'${name}')" class="btn-verify">OK</button>`}</td></tr>`;
         });
-        document.getElementById('memberTable').innerHTML = h;
+        document.getElementById('memberTable').innerHTML=h;
 
         let ph='';
         members.forEach((name,i)=>{
             const id=i+1;
             const rec = received[id]===true;
-            ph += `<tr><td>${name}</td><td class="${rec?'paid':'not-paid'}">${rec?'تم ✅':'لم يستلم'}</td>
+            ph+=`<tr><td>${name}</td><td class="${rec?'paid':'not-paid'}">${rec?'تم ✅':'لم يستلم'}</td>
             ${isAdmin?`<td><button onclick="toggleRec(${id},${rec})" class="toggle-btn">تبديل</button></td>`:''}</tr>`;
         });
-        document.getElementById('payoutTable').innerHTML = ph;
+        document.getElementById('payoutTable').innerHTML=ph;
     });
 }
 
 function verify(id,name){
-    const code = document.getElementById('in-'+id).value;
-    db.ref('secret_codes/'+id).once('value', s => {
-        if(String(code) === String(s.val())){
-            db.ref(`payments/${monthKey}/${id}`).set({status:true, date:new Date().toLocaleDateString('ar-EG')})
-            .then(()=> sendPushNotification(`✅ تم تأكيد استلام مبلغ من: ${name}`));
-        } else { showAlert("❌ <b>عذراً.. الكود خطأ!</b><br>يرجى التأكد من الرقم والمحاولة مرة أخرى."); }
-    });
+    showAlert("⚠️ سيتم التأكيد بواسطة المسؤول فقط!");
 }
 
-function resetMonthData(){ if(confirm("تصفير الشهر؟")){ db.ref(`payments/${monthKey}`).remove().then(()=> sendPushNotification("📅 تم تصفير السجل لشهر جديد")); } }
-function toggleRec(id,s){ db.ref(`received_totals/${id}`).set(!s); }
-function toggleAdminView(){ const p = document.getElementById('adminPanel'); p.style.display = (p.style.display==='block')?'none':'block'; }
-function loginAdmin(){ auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('pass').value).catch(e=>showAlert(e.message)); }
-function logoutAdmin(){ auth.signOut().then(()=> location.reload()); }
-</script>
+function resetMonthData(){
+    if(confirm("تصفير الشهر؟")){
+        db.ref(`payments/${monthKey}`).remove();
+        sendPushNotification("📅 تم تصفير السجل لشهر جديد");
+    }
+}
 
+function toggleRec(id,s){ db.ref(`received_totals/${id}`).set(!s); }
+
+function toggleAdminView(){ const p=document.getElementById('adminPanel'); p.style.display=(p.style.display==='block')?'none':'block'; }
+function loginAdmin(){ auth.signInWithEmailAndPassword(document.getElementById('email').value,document.getElementById('pass').value).catch(e=>showAlert(e.message)); }
+function logoutAdmin(){ auth.signOut().then(()=>location.reload()); }
+
+function sendPushNotification(msg){
+    fetch('/api/send-notification', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({message: msg})
+    });
+}
+</script>
 </body>
 </html>
