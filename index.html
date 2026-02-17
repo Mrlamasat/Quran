@@ -7,7 +7,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        /* التنسيق الجمالي للموقع */
         body { font-family: 'Segoe UI', sans-serif; background-color: #f0f4f8; padding: 20px; text-align: center; }
         .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 8px solid #1a73e8; }
         h1 { color: #1a73e8; text-transform: uppercase; }
@@ -16,7 +15,8 @@
         .paid { color: #28a745; font-weight: bold; background: #e6ffed; padding: 5px 12px; border-radius: 15px; }
         .not-paid { color: #dc3545; font-weight: bold; background: #ffeef0; padding: 5px 12px; border-radius: 15px; }
         input { width: 80px; padding: 6px; border: 1px solid #ddd; border-radius: 5px; text-align: center; }
-        button { background: #34a853; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        button { background: #34a853; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #2d8e47; }
     </style>
 </head>
 <body>
@@ -37,7 +37,6 @@
 </div>
 
 <script>
-    // إعدادات Firebase الخاصة بك
     const firebaseConfig = {
         apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4qU4v170M",
         authDomain: "jamia-app-5bd27.firebaseapp.com",
@@ -58,7 +57,6 @@
         { id: 10, name: "عبدالرحمن الصبيح" }
     ];
 
-    // جلب حالة الدفع
     db.ref('payments').on('value', (snapshot) => {
         const paidStatus = snapshot.val() || {};
         const tableBody = document.getElementById('tableBody');
@@ -81,20 +79,22 @@
         });
     });
 
-    // دالة التحقق من الكود السري في قاعدة البيانات
     function checkSecretCode(memberId) {
-        const inputCode = document.getElementById('code-' + memberId).value;
+        const inputCode = document.getElementById('code-' + memberId).value.trim();
         
-        // جلب الكود السري الخاص بهذا العضو من Firebase
         db.ref('secret_codes/' + memberId).once('value').then((snapshot) => {
             const secretCode = snapshot.val();
             
-            if (inputCode === secretCode) {
+            // التعديل هنا: تحويل كلا القيمتين إلى نصوص (String) لضمان نجاح المقارنة
+            if (secretCode !== null && String(inputCode) === String(secretCode)) {
                 db.ref('payments/' + memberId).set(true);
                 alert("تم التحقق بنجاح!");
             } else {
-                alert("الكود غير صحيح!");
+                alert("الكود غير صحيح! يرجى التأكد من الرقم.");
             }
+        }).catch((error) => {
+            console.error("خطأ في الاتصال:", error);
+            alert("حدث خطأ في الاتصال بقاعدة البيانات.");
         });
     }
 </script>
