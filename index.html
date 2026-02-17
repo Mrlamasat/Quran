@@ -1,196 +1,225 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spaarkring - Dashboard</title>
-    
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-    <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: "564eb270-ccb3-428f-b9f8-f162d56321c4",
-        });
-      });
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spaarkring Dashboard</title>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
 
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; text-align: center; direction: rtl; margin: 0; padding: 10px; }
-        .container { max-width: 500px; margin: 10px auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { color: #1a73e8; cursor: pointer; margin-bottom: 5px; }
-        .status-card { background: #e8f4fd; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; border-right: 5px solid #1a73e8; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 10px 5px; border-bottom: 1px solid #eee; font-size: 0.85em; }
-        .paid { color: #27ae60; font-weight: bold; }
-        .not-paid { color: #e74c3c; font-weight: bold; }
-        .btn-verify { background: #27ae60; color: white; border: none; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        
-        /* تصميم نافذة التنبيه المخصصة (بدون روابط) */
-        .custom-alert { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
-        .alert-content { background-color: white; margin: 30% auto; padding: 25px; border-radius: 15px; width: 80%; max-width: 350px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
-        .alert-btn { background: #1a73e8; color: white; border: none; padding: 10px 30px; border-radius: 8px; cursor: pointer; margin-top: 20px; font-weight: bold; width: 100%; }
-        
-        /* تنسيق خانة إدخال الكود (أرقام فقط) */
-        .code-input { width: 60px; text-align: center; padding: 5px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; }
-        /* إخفاء أسهم الزيادة والنقصان في حقول الأرقام */
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+<!-- React & ReactDOM -->
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-        #adminPanel { display: none; margin-top: 30px; border-top: 2px dashed #dc3545; padding: 15px; background: #fffdfd; border-radius: 10px; }
-        .admin-input { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
-        .btn-reset { background: #c0392b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
-        .payout-container { background:#f9fffb; padding:15px; border-radius:10px; margin-top:30px; border: 1px solid #d1fae5; }
-        .toggle-btn { background: #3182ce; color: white; border: none; padding: 3px 6px; border-radius: 3px; font-size: 0.7em; cursor: pointer; }
-    </style>
-</head>
-<body>
+<!-- Firebase v9 -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { getAuth, onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-<div class="container">
-    <h1 onclick="toggleAdminView()">Spaarkring</h1>
-    <div class="status-card">📢 القسط: 400 يورو | الموعد: 22 من الشهر</div>
-    <h3 id="monthLabel"></h3>
-    
-    <table>
-        <thead><tr><th>الاسم</th><th>الحالة</th><th>تأكيد</th></tr></thead>
-        <tbody id="memberTable"></tbody>
-    </table>
+window.FirebaseApp = initializeApp({
+  apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4xFy5ylz9I",
+  authDomain: "jamia-app-5bd27.firebaseapp.com",
+  databaseURL: "https://jamia-app-5bd27-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jamia-app-5bd27",
+  storageBucket: "jamia-app-5bd27.appspot.com",
+  messagingSenderId: "870308712173",
+  appId: "1:870308712173:web:be101df99fef412f7886e4"
+});
+window.db = getDatabase(window.FirebaseApp);
+window.auth = getAuth(window.FirebaseApp);
+</script>
 
-    <div class="payout-container">
-        <h3 style="color:#2d3748; margin-top:0;">💰 سجل استلام المبالغ (4000€)</h3>
-        <table>
-            <thead><tr id="payoutHeader"><th>الاسم</th><th>حالة الاستلام</th></tr></thead>
-            <tbody id="payoutTable"></tbody>
-        </table>
-    </div>
-
-    <div id="adminPanel">
-        <div id="loginForm">
-            <h4 style="color:#c0392b;">دخول المسؤول</h4>
-            <input type="email" id="email" placeholder="الإيميل" class="admin-input">
-            <input type="password" id="pass" placeholder="كلمة المرور" class="admin-input">
-            <button onclick="loginAdmin()" style="background:#2c3e50; color:white; width:95%; padding:10px; border:none; border-radius:5px;">دخول</button>
-        </div>
-        <div id="adminControls" style="display:none;">
-            <p style="color:#27ae60; font-weight:bold;">مرحباً يا محمد</p>
-            <button onclick="resetMonthData()" class="btn-reset">⚠️ تصفير سجل الشهر الجديد</button>
-            <button onclick="logoutAdmin()" style="background:#95a5a6; color:white; border:none; padding:8px; border-radius:5px; margin-top:20px; width:95%;">خروج</button>
-        </div>
-    </div>
-</div>
-
-<div id="myAlert" class="custom-alert">
-    <div class="alert-content">
-        <p id="alertMsg" style="color: #333; font-size: 1.1em; line-height: 1.5;"></p>
-        <button onclick="closeAlert()" class="alert-btn">موافق</button>
-    </div>
-</div>
-
+<!-- OneSignal -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
-const firebaseConfig = {
-    apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4xFy5ylz9I",
-    authDomain: "jamia-app-5bd27.firebaseapp.com",
-    databaseURL: "https://jamia-app-5bd27-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "jamia-app-5bd27",
-    storageBucket: "jamia-app-5bd27.appspot.com",
-    messagingSenderId: "870308712173",
-    appId: "1:870308712173:web:be101df99fef412f7886e4"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const auth = firebase.auth();
-
-const members = ["محسن", "سليم", "أبو محمد", "مشتاق", "رضوان", "حمزة", "علي", "أبو هتان", "أبو خالد", "عبدالرحمن"];
-const monthKey = new Date().getFullYear() + "-" + (new Date().getMonth() + 1).toString().padStart(2, '0');
-
-document.getElementById('monthLabel').innerText = "سجل شهر: " + new Date().toLocaleDateString('ar-EG', {month:'long', year:'numeric'});
-
-function showAlert(msg) {
-    document.getElementById('alertMsg').innerHTML = msg;
-    document.getElementById('myAlert').style.display = 'block';
-}
-function closeAlert() {
-    document.getElementById('myAlert').style.display = 'none';
-}
-
-function sendPushNotification(msg) {
-    fetch('https://onesignal.com/api/v1/notifications', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Basic YOUR_REST_API_KEY' // استبدل YOUR_REST_API_KEY بمفتاحك
-        },
-        body: JSON.stringify({
-            app_id: "564eb270-ccb3-428f-b9f8-f162d56321c4",
-            included_segments: ["Total Subscriptions"],
-            contents: { "ar": msg },
-            headings: { "ar": "تنبيه Spaarkring" }
-        })
-    });
-}
-
-auth.onAuthStateChanged(user => {
-    const isAdmin = user && !user.isAnonymous;
-    document.getElementById('loginForm').style.display = isAdmin ? 'none' : 'block';
-    document.getElementById('adminControls').style.display = isAdmin ? 'block' : 'none';
-    const header = document.getElementById('payoutHeader');
-    header.innerHTML = `<th>الاسم</th><th>حالة الاستلام</th>${isAdmin ? '<th>تحكم</th>' : ''}`;
-    if(!user) auth.signInAnonymously();
-    loadData();
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+OneSignalDeferred.push(async function(OneSignal) {
+  await OneSignal.init({ 
+    appId: "564eb270-ccb3-428f-b9f8-f162d56321c4",
+    allowLocalhostAsSecureOrigin: true
+  });
+  OneSignal.showSlidedownPrompt(); // طلب إذن الإشعارات
+  window.OneSignal = OneSignal;
 });
 
-function loadData() {
-    db.ref().on('value', snap => {
-        const data = snap.val() || {};
-        const payments = data.payments ? (data.payments[monthKey] || {}) : {};
-        const received = data.received_totals || {};
-        const isAdmin = auth.currentUser && !auth.currentUser.isAnonymous;
-        
-        let h = '';
-        members.forEach((name, i) => {
-            const id = i + 1;
-            const paid = payments[id] && payments[id].status;
-            h += `<tr><td><b>${name}</b></td><td class="${paid?'paid':'not-paid'}">${paid?'✅':'❌'}</td>
-            <td>${paid?'✔️':`<input type="number" pattern="[0-9]*" inputmode="numeric" id="in-${id}" class="code-input"> <button onclick="verify(${id},'${name}')" class="btn-verify">OK</button>`}</td></tr>`;
-        });
-        document.getElementById('memberTable').innerHTML = h;
-
-        let ph = '';
-        members.forEach((name, i) => {
-            const id = i + 1;
-            const rec = received[id] === true;
-            ph += `<tr><td>${name}</td><td class="${rec?'paid':'not-paid'}">${rec?'تم ✅':'لم يستلم'}</td>
-            ${isAdmin ? `<td><button onclick="toggleRec(${id},${rec})" class="toggle-btn">تبديل</button></td>` : ''}</tr>`;
-        });
-        document.getElementById('payoutTable').innerHTML = ph;
-    });
+// دالة إرسال الإشعار باستخدام مفتاح REST App Key الذي زودتني به
+window.sendPush = function(msg){
+  fetch('https://onesignal.com/api/v1/notifications',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization':'Basic os_v2_app_kzhle4gmwnbi7opy6frnkyzbyrqitvovpu2ugku5pdtd33igz22ayihzxibmlbr7quywkkczb4hchcca23c5ed2bhsyyikzz7b6k6ui'
+    },
+    body: JSON.stringify({
+      app_id: "564eb270-ccb3-428f-b9f8-f162d56321c4",
+      included_segments:["Subscribed Users"],
+      headings:{"ar":"تنبيه Spaarkring"},
+      contents:{"ar":msg}
+    })
+  });
 }
-
-function verify(id, name) {
-    const code = document.getElementById('in-'+id).value;
-    db.ref('secret_codes/'+id).once('value', s => {
-        if(String(code) === String(s.val())) {
-            db.ref(`payments/${monthKey}/${id}`).set({status: true, date: new Date().toLocaleDateString('ar-EG')})
-            .then(() => sendPushNotification(`✅ تم تأكيد استلام مبلغ من: ${name}`));
-        } else { 
-            showAlert("❌ <b>عذراً.. الكود خطأ!</b><br>يرجى التأكد من الرقم والمحاولة مرة أخرى."); 
-        }
-    });
-}
-
-function resetMonthData() {
-    if(confirm("تصفير الشهر؟")) {
-        db.ref(`payments/${monthKey}`).remove().then(() => sendPushNotification("📅 تم تصفير السجل لشهر جديد"));
-    }
-}
-
-function toggleRec(id, s) { db.ref(`received_totals/${id}`).set(!s); }
-function toggleAdminView() { const p = document.getElementById('adminPanel'); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; }
-function loginAdmin() { auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('pass').value).catch(e => showAlert(e.message)); }
-function logoutAdmin() { auth.signOut().then(() => location.reload()); }
 </script>
+
+</head>
+<body class="bg-gray-100 font-sans p-4">
+
+<div id="root"></div>
+
+<script type="text/babel">
+
+const { useState, useEffect } = React;
+const members = ["محسن","سليم","أبو محمد","مشتاق","رضوان","حمزة","علي","أبو هتان","أبو خالد","عبدالرحمن"];
+const monthKey = new Date().getFullYear() + "-" + String(new Date().getMonth()+1).padStart(2,'0');
+
+function Alert({ message, onClose }) {
+  if(!message) return null;
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-xl shadow-lg w-80">
+        <p className="text-gray-800 text-lg" dangerouslySetInnerHTML={{__html: message}}></p>
+        <button onClick={onClose} className="mt-4 w-full bg-blue-600 text-white p-2 rounded font-bold">موافق</button>
+      </div>
+    </div>
+  );
+}
+
+function MemberTable({ showAlert }) {
+  const [payments,setPayments] = useState({});
+  useEffect(()=>{
+    const paymentsRef = ref(window.db, `payments/${monthKey}`);
+    return onValue(paymentsRef, snap=> setPayments(snap.val()||{}));
+  },[]);
+
+  const verify=(id,name)=>{
+    const code = document.getElementById(`in-${id}`).value;
+    const codeRef = ref(window.db, `secret_codes/${id}`);
+    onValue(codeRef, snap=>{
+      if(String(code)===String(snap.val())){
+        set(ref(window.db, `payments/${monthKey}/${id}`), {status:true, date:new Date().toLocaleDateString('ar-EG')});
+        showAlert(`✅ تم تأكيد استلام مبلغ من: ${name}`);
+        window.sendPush(`✅ تم تأكيد استلام مبلغ من: ${name}`);
+      } else {
+        showAlert("❌ <b>عذراً.. الكود خطأ!</b><br>يرجى التأكد من الرقم والمحاولة مرة أخرى.");
+      }
+    },{onlyOnce:true});
+  }
+
+  return (
+    <table className="w-full mb-6">
+      <thead className="bg-gray-200"><tr><th className="py-2">الاسم</th><th>الحالة</th><th>تأكيد</th></tr></thead>
+      <tbody>
+        {members.map((name,i)=>{
+          const id=i+1;
+          const paid=payments[id]?.status;
+          return (
+            <tr key={id} className="border-b">
+              <td className="py-2 font-semibold">{name}</td>
+              <td className={paid?"text-green-600":"text-red-600"}>{paid?"✅":"❌"}</td>
+              <td>{paid?"✔️":<>
+                <input type="number" id={`in-${id}`} className="border px-2 py-1 rounded w-16 text-center"/>
+                <button onClick={()=>verify(id,name)} className="bg-green-600 text-white px-2 py-1 rounded ml-2">OK</button>
+              </>}</td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  )
+}
+
+function PayoutTable({ isAdmin }) {
+  const [received,setReceived] = useState({});
+  useEffect(()=>{
+    const rRef = ref(window.db, 'received_totals');
+    return onValue(rRef, snap=> setReceived(snap.val()||{}));
+  },[]);
+
+  const toggleRec=(id,val)=> set(ref(window.db, `received_totals/${id}`), !val);
+
+  return (
+    <div className="bg-green-50 p-4 rounded border border-green-200">
+      <h3 className="text-gray-800 font-semibold mb-2">💰 سجل استلام المبالغ (4000€)</h3>
+      <table className="w-full">
+        <thead className="bg-gray-200">
+          <tr><th className="py-2">الاسم</th><th>حالة الاستلام</th>{isAdmin?<th>تحكم</th>:null}</tr>
+        </thead>
+        <tbody>
+          {members.map((name,i)=>{
+            const id=i+1; const rec=received[id]===true;
+            return (
+              <tr key={id} className="border-b">
+                <td className="py-2">{name}</td>
+                <td className={rec?"text-green-600":"text-red-600"}>{rec? "تم ✅":"لم يستلم"}</td>
+                {isAdmin && <td><button onClick={()=>toggleRec(id,rec)} className="bg-blue-600 text-white px-2 py-1 rounded text-xs">تبديل</button></td>}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function AdminPanel({ showAlert }) {
+  const [email,setEmail]=useState("");
+  const [pass,setPass]=useState("");
+  const [isAdmin,setIsAdmin]=useState(false);
+
+  const login=()=>signInWithEmailAndPassword(window.auth,email,pass).then(()=>setIsAdmin(true)).catch(e=>showAlert(e.message));
+  const logout=()=>signOut(window.auth).then(()=>setIsAdmin(false));
+  const resetMonth=()=>{ if(confirm("تصفير الشهر؟")){ remove(ref(window.db, `payments/${monthKey}`)).then(()=>showAlert("📅 تم تصفير السجل لشهر جديد")); } }
+
+  return (
+    <div className="mt-6 border-t-2 border-dashed border-red-500 pt-4">
+      {!isAdmin ? <div>
+        <h4 className="text-red-600 mb-2">دخول المسؤول</h4>
+        <input type="email" placeholder="الإيميل" value={email} onChange={e=>setEmail(e.target.value)} className="border w-full rounded p-2 mb-2"/>
+        <input type="password" placeholder="كلمة المرور" value={pass} onChange={e=>setPass(e.target.value)} className="border w-full rounded p-2 mb-2"/>
+        <button onClick={login} className="w-full bg-gray-800 text-white rounded p-2 font-bold">دخول</button>
+      </div> :
+      <div>
+        <p className="text-green-600 font-bold mb-2">مرحباً يا مسؤول</p>
+        <button onClick={resetMonth} className="w-full bg-red-600 text-white rounded p-2 mb-2 font-bold">⚠️ تصفير سجل الشهر الجديد</button>
+        <button onClick={logout} className="w-full bg-gray-500 text-white rounded p-2 font-bold">خروج</button>
+      </div>}
+    </div>
+  )
+}
+
+function App() {
+  const [user,setUser]=useState(null);
+  const [alertMsg,setAlertMsg]=useState("");
+  const [isAdmin,setIsAdmin]=useState(false);
+
+  useEffect(()=>{
+    onAuthStateChanged(window.auth,u=>{
+      if(!u) signInAnonymously(window.auth);
+      setUser(u);
+      setIsAdmin(u && !u.isAnonymous);
+    });
+  },[]);
+
+  return (
+    <div className="max-w-lg mx-auto bg-white p-6 rounded-xl shadow-lg mt-4">
+      <h1 className="text-2xl text-blue-600 font-bold cursor-pointer mb-2">Spaarkring</h1>
+      <div className="bg-blue-50 p-4 rounded mb-4 font-bold border-r-4 border-blue-600">📢 القسط: 400 يورو | الموعد: 22 من الشهر</div>
+      <h3 className="text-gray-700 mb-4">سجل شهر: {new Date().toLocaleDateString('ar-EG',{month:'long',year:'numeric'})}</h3>
+
+      <MemberTable showAlert={setAlertMsg}/>
+      <PayoutTable isAdmin={isAdmin}/>
+      <AdminPanel showAlert={setAlertMsg}/>
+
+      <Alert message={alertMsg} onClose={()=>setAlertMsg("")}/>
+    </div>
+  )
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+</script>
+
 </body>
 </html>
