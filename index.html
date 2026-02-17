@@ -3,30 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>جمعية محمد - نظام الدفع المباشر</title>
+    <title>Samenstorten - نظام الجمعية</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f4f8; padding: 20px; text-align: center; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        h1 { color: #1a73e8; margin-bottom: 5px; }
-        .info-box { background: #e8f0fe; padding: 10px; border-radius: 10px; margin-bottom: 25px; color: #1967d2; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; background: white; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f4f8; padding: 20px; text-align: center; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 8px solid #1a73e8; }
+        h1 { color: #1a73e8; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }
+        .info-box { background: #fdfdfd; padding: 10px; border: 1px solid #eee; border-radius: 10px; margin-bottom: 25px; color: #555; }
+        table { width: 100%; border-collapse: collapse; }
         th, td { padding: 15px; border-bottom: 1px solid #eee; text-align: center; }
-        th { background: #1a73e8; color: white; border-radius: 5px; }
+        th { background: #1a73e8; color: white; }
         .paid { color: #28a745; font-weight: bold; background: #e6ffed; padding: 5px 12px; border-radius: 15px; }
         .not-paid { color: #dc3545; font-weight: bold; background: #ffeef0; padding: 5px 12px; border-radius: 15px; }
         input { width: 70px; padding: 6px; border: 1px solid #ddd; border-radius: 5px; text-align: center; }
-        button { background: #34a853; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #2d8e47; }
+        button { background: #34a853; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>📊 نظام جمعية محمد</h1>
-    <div class="info-box">القسط: 400 يورو | الموعد: 22 من كل شهر</div>
+    <h1>Samenstorten</h1>
+    <div class="info-box">المسؤول: محمد المحسن | القسط: 400 يورو | الموعد: 22 من كل شهر</div>
 
     <table>
         <thead>
@@ -36,13 +34,11 @@
                 <th>تأكيد الدفع</th>
             </tr>
         </thead>
-        <tbody id="tableBody">
-            </tbody>
+        <tbody id="tableBody"></tbody>
     </table>
 </div>
 
 <script>
-    // الإعدادات مأخوذة من صورك (Firebase Config)
     const firebaseConfig = {
         apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4qU4v170M",
         authDomain: "jamia-app-5bd27.firebaseapp.com",
@@ -50,15 +46,12 @@
         projectId: "jamia-app-5bd27",
         storageBucket: "jamia-app-5bd27.appspot.com",
         messagingSenderId: "870308712173",
-        appId: "1:870308712173:web:be101df99fef2085b344a2",
-        measurementId: "G-FZ9GMJTEL1"
+        appId: "1:870308712173:web:be101df99fef2085b344a2"
     };
 
-    // تشغيل Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // قائمة الأعضاء والأكواد (يمكنك تغيير الأكواد كما تحب)
     const members = [
         { id: 1, name: "محسن", code: "1010" },
         { id: 2, name: "سليم", code: "2020" },
@@ -72,7 +65,6 @@
         { id: 10, name: "عبدالرحمن الصبيح", code: "0000" }
     ];
 
-    // جلب البيانات وتحديث الجدول فوراً عند أي تغيير
     db.ref('payments').on('value', (snapshot) => {
         const paidStatus = snapshot.val() || {};
         const tableBody = document.getElementById('tableBody');
@@ -85,7 +77,7 @@
                     <td><strong>${member.name}</strong></td>
                     <td><span class="${isPaid ? 'paid' : 'not-paid'}">${isPaid ? '✅ تم الدفع' : '❌ لم يدفع'}</span></td>
                     <td>
-                        ${isPaid ? '✔️' : `
+                        ${isPaid ? '✔️ مكتمل' : `
                             <input type="text" id="code-${member.id}" placeholder="الكود">
                             <button onclick="confirmPay(${member.id}, '${member.code}')">تأكيد</button>
                         `}
@@ -99,9 +91,9 @@
         const inputCode = document.getElementById('code-' + id).value;
         if (inputCode === correctCode) {
             db.ref('payments/' + id).set(true);
-            alert("شكراً لك! تم تأكيد الدفع بنجاح.");
+            alert("تم تأكيد دفعك بنجاح في Samenstorten!");
         } else {
-            alert("الكود غير صحيح، يرجى مراجعة محمد.");
+            alert("الكود غير صحيح!");
         }
     }
 </script>
