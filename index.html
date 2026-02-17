@@ -3,30 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spaarkring - Admin Control</title>
+<title>Spaarkring - Admin & Member</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
 <style>
-    body { font-family: 'Segoe UI', sans-serif; background:#f0f4f8; padding:10px; text-align:center; }
-    .container { max-width:100%; margin:auto; background:white; padding:20px; border-radius:20px; box-shadow:0 10px 20px rgba(0,0,0,0.1); border-top:8px solid #1a73e8; margin-bottom:20px; }
-    h1 { color:#1a73e8; margin-bottom:15px; cursor: pointer; }
-    .payment-notice { background:#e8f0fe; border:1px solid #1a73e8; padding:15px; border-radius:12px; margin-bottom:20px; font-weight:bold; }
-    .payout-info { background-color:#e6ffed; border:2px dashed #34a853; color:#2e7d32; padding:15px; border-radius:12px; margin-top:20px; }
-    table { width:100%; border-collapse:collapse; margin-top:10px; table-layout: fixed; }
-    th,td { padding:10px 2px; border-bottom:1px solid #eee; text-align:center; font-size: 0.85em; }
-    .paid { color:#28a745; font-weight:bold; }
-    .not-paid { color:#dc3545; font-weight:bold; }
-    .admin-btn { background:#1a73e8; color:white; border:none; padding:4px 8px; border-radius:5px; cursor:pointer; font-size:0.8em; }
-    #adminSection { display:none; margin-top:30px; padding:20px; border:2px solid #dc3545; border-radius:15px; background:#fff5f5; }
-    input { width:45px; padding:5px; text-align:center; border:1px solid #ddd; border-radius:4px; }
-    .admin-input { width: 90%; margin-bottom:10px; padding:8px; border:1px solid #ccc; border-radius:5px; }
+body { font-family:'Segoe UI', sans-serif; background:#f0f4f8; padding:10px; text-align:center; }
+.container { max-width:100%; margin:auto; background:white; padding:20px; border-radius:20px; box-shadow:0 10px 20px rgba(0,0,0,0.1); border-top:8px solid #1a73e8; margin-bottom:20px; }
+h1 { color:#1a73e8; margin-bottom:15px; cursor:pointer; }
+.payment-notice { background:#e8f0fe; border:1px solid #1a73e8; padding:15px; border-radius:12px; margin-bottom:20px; font-weight:bold; }
+.payout-info { background:#e6ffed; border:2px dashed #34a853; color:#2e7d32; padding:15px; border-radius:12px; margin-top:20px; font-weight:bold; }
+table { width:100%; border-collapse:collapse; margin-top:10px; table-layout:fixed; }
+th,td { padding:10px 5px; border-bottom:1px solid #eee; text-align:center; font-size:0.9em; }
+th { background:#f8f9fa; color:#555; }
+.paid { color:#28a745; font-weight:bold; background:#e6ffed; padding:5px 8px; border-radius:5px; }
+.not-paid { color:#dc3545; font-weight:bold; background:#ffeef0; padding:5px 8px; border-radius:5px; }
+input { width:50px; padding:5px; text-align:center; border:1px solid #ddd; border-radius:4px; }
+button { background:#34a853; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; }
+#customAlert { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:25px; border-radius:15px; box-shadow:0 0 30px rgba(0,0,0,0.3); z-index:1000; width:85%; max-width:320px; }
+#overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; }
+.close-btn { background:#1a73e8; color:white; border:none; padding:8px 20px; border-radius:5px; margin-top:15px; cursor:pointer; width:100%; }
+#adminSection { display:none; margin-top:30px; padding:20px; border:2px solid #dc3545; border-radius:15px; background:#fff5f5; }
+.admin-input { width:90%; margin-bottom:10px; padding:8px; border:1px solid #ccc; border-radius:5px; }
+.admin-btn { background:#1a73e8; color:white; border:none; padding:4px 8px; border-radius:5px; cursor:pointer; font-size:0.8em; }
+.admin-only { display:none; }
+@media screen and (max-width:600px){ th,td{ font-size:0.8em; padding:6px 2px; } .container{ padding:10px; } h1{ font-size:1.6em; } }
 </style>
 </head>
-
 <body>
+
+<div id="overlay"></div>
+<div id="customAlert">
+  <p id="alertMessage" style="font-weight:bold;font-size:1.1em;"></p>
+  <button class="close-btn" onclick="closeAlert()">موافق</button>
+</div>
 
 <div class="container">
     <h1 onclick="adminLoginPrompt()">Spaarkring</h1>
@@ -35,6 +47,7 @@
     </div>
 
     <h3 id="monthTitle"></h3>
+
     <table>
         <thead>
             <tr><th>الاسم</th><th>الحالة</th><th>التاريخ</th><th>تأكيد</th></tr>
@@ -42,126 +55,157 @@
         <tbody id="tableBody"></tbody>
     </table>
 
+    <hr style="margin:30px 0; border:0; border-top:1px solid #eee;">
+
+    <h2>سجل استلام المبالغ</h2>
+    <table>
+        <thead>
+            <tr><th>الاسم</th><th>حالة الاستلام</th><th class="admin-only">تحكم</th></tr>
+        </thead>
+        <tbody id="payoutTableBody"></tbody>
+    </table>
+
     <div class="payout-info">
-        <span style="font-weight:bold; font-size:1.1em;">💰 يستلم كل عضو مبلغ: 4000 يورو</span>
-        <table style="margin-top:15px;">
-            <thead><tr><th>الاسم</th><th>حالة الاستلام</th><th class="admin-only" style="display:none;">تحكم</th></tr></thead>
-            <tbody id="payoutTableBody"></tbody>
-        </table>
+        💰 يستلم كل عضو مبلغ: 4000 يورو
     </div>
 
     <div id="adminSection">
-        <h3 style="color:#dc3545;">لوحة التحكم (محمد)</h3>
+        <h3 style="color:#dc3545;">لوحة التحكم (المسؤول)</h3>
         <input type="email" id="adminEmail" placeholder="البريد الإلكتروني" class="admin-input"><br>
         <input type="password" id="adminPass" placeholder="كلمة المرور" class="admin-input"><br>
-        <button onclick="handleLogin()" style="background:#dc3545; width:90%; padding:10px; color:white; border:none; border-radius:5px; cursor:pointer;">دخول المسؤول</button>
+        <button onclick="handleLogin()" style="background:#dc3545;width:90%;padding:10px;color:white;border:none;border-radius:5px;cursor:pointer;">دخول المسؤول</button>
         <hr>
-        <button onclick="resetMonth()" style="background:#666; color:white; border:none; padding:8px; border-radius:5px; width:90%; margin-bottom:10px;">تصفير الشهر الجديد</button>
-        <button onclick="logout()" style="background:#444; color:white; border:none; padding:8px; border-radius:5px; width:90%;">خروج</button>
+        <button onclick="resetMonth()" style="background:#666;color:white;border:none;padding:8px;border-radius:5px;width:90%;margin-bottom:10px;">تصفير الشهر الجديد</button>
+        <button onclick="logout()" style="background:#444;color:white;border:none;padding:8px;border-radius:5px;width:90%;">خروج</button>
     </div>
 </div>
 
 <script>
-// الإعدادات الجديدة المصلحة من قبلك يا محمد
 const firebaseConfig = {
   apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4xFy5ylz9I",
   authDomain: "jamia-app-5bd27.firebaseapp.com",
   databaseURL: "https://jamia-app-5bd27-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "jamia-app-5bd27",
-  storageBucket: "jamia-app-5bd27.firebasestorage.app",
+  storageBucket: "jamia-app-5bd27.appspot.com",
   messagingSenderId: "870308712173",
   appId: "1:870308712173:web:be101df99fef412f7886e4"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 
 const members = [
-    { id:1, name:"محسن" }, { id:2, name:"سليم" }, { id:3, name:"أبو محمد" },
-    { id:4, name:"مشتاق" }, { id:5, name:"رضوان" }, { id:6, name:"حمزة" },
-    { id:7, name:"علي" }, { id:8, name:"أبو هتان" }, { id:9, name:"أبو خالد" },
-    { id:10, name:"عبدالرحمن" }
+    { id:1,name:"محسن"},{ id:2,name:"سليم"},{ id:3,name:"أبو محمد"},
+    { id:4,name:"مشتاق"},{ id:5,name:"رضوان"},{ id:6,name:"حمزة"},
+    { id:7,name:"علي"},{ id:8,name:"أبو هتان"},{ id:9,name:"أبو خالد"},
+    { id:10,name:"عبدالرحمن"}
 ];
 
 const monthKey = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
-document.getElementById("monthTitle").innerText = "سجل شهر: " + new Date().toLocaleDateString('ar-EG',{month:'long', year:'numeric'});
+document.getElementById("monthTitle").innerText = "سجل شهر: " + new Date().toLocaleDateString('ar-EG',{month:'long',year:'numeric'});
 
-// مراقبة الدخول لإظهار أزرار التحكم
-auth.onAuthStateChanged(user => {
-    if (user && !user.isAnonymous) {
-        document.getElementById('adminSection').style.display = 'block';
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'table-cell');
-        fetchData(); 
+// نوافذ التنبيه
+function showAlert(msg){
+    document.getElementById('alertMessage').innerText = msg;
+    document.getElementById('customAlert').style.display='block';
+    document.getElementById('overlay').style.display='block';
+}
+function closeAlert(){
+    document.getElementById('customAlert').style.display='none';
+    document.getElementById('overlay').style.display='none';
+}
+
+// تسجيل الدخول المجهول أو المسؤول
+auth.onAuthStateChanged(user=>{
+    if(user && !user.isAnonymous){
+        document.getElementById('adminSection').style.display='block';
+        document.querySelectorAll('.admin-only').forEach(el=>el.style.display='table-cell');
+        fetchData();
     } else {
-        auth.signInAnonymously().then(() => fetchData());
+        auth.signInAnonymously().then(()=>fetchData());
     }
 });
 
-function handleLogin() {
-    const email = document.getElementById('adminEmail').value;
-    const pass = document.getElementById('adminPass').value;
-    auth.signInWithEmailAndPassword(email, pass).catch(err => alert("خطأ: " + err.message));
+// تسجيل دخول المسؤول
+function handleLogin(){
+    const email=document.getElementById('adminEmail').value;
+    const pass=document.getElementById('adminPass').value;
+    auth.signInWithEmailAndPassword(email,pass).catch(err=>showAlert("خطأ: "+err.message));
 }
+function logout(){ auth.signOut().then(()=>location.reload()); }
 
-function logout() { auth.signOut().then(() => location.reload()); }
-
-function fetchData() {
-    db.ref().on('value', snapshot => {
-        const data = snapshot.val() || {};
-        const payments = data.payments ? (data.payments[monthKey] || {}) : {};
+// جلب البيانات
+function fetchData(){
+    db.ref().on('value', snapshot=>{
+        const data = snapshot.val()||{};
+        const payments = data.payments ? (data.payments[monthKey]||{}) : {};
         const received = data.received_totals || {};
-        renderTables(payments, received);
+        renderTables(payments,received);
+        checkLatePayments(payments);
     });
 }
 
-function renderTables(payments, received) {
-    let html = '';
-    members.forEach(m => {
-        const p = payments[m.id] || {};
-        const isPaid = p.status === true;
-        html += `<tr>
+// عرض الجداول
+function renderTables(payments,received){
+    let html='';
+    members.forEach(m=>{
+        const p = payments[m.id]||{};
+        const isPaid = p.status===true;
+        html+=`<tr>
             <td><strong>${m.name}</strong></td>
             <td class="${isPaid?'paid':'not-paid'}">${isPaid?'✅':'❌'}</td>
-            <td>${isPaid ? p.date : '-'}</td>
+            <td>${isPaid?p.date:'-'}</td>
             <td>${isPaid?'✔️':`<input type="password" id="c-${m.id}" placeholder="***"><button onclick="verify(${m.id})">OK</button>`}</td>
         </tr>`;
     });
-    document.getElementById('tableBody').innerHTML = html;
+    document.getElementById('tableBody').innerHTML=html;
 
-    let rHtml = '';
+    let rHtml='';
     const isAdmin = auth.currentUser && !auth.currentUser.isAnonymous;
-    members.forEach(m => {
-        const hasRec = received[m.id] === true;
-        rHtml += `<tr>
+    members.forEach(m=>{
+        const hasRec = received[m.id]===true;
+        rHtml+=`<tr>
             <td>${m.name}</td>
             <td><span class="${hasRec?'paid':'not-paid'}">${hasRec?'تم الاستلام ✅':'لم يستلم'}</span></td>
-            ${isAdmin ? `<td class="admin-only"><button class="admin-btn" onclick="toggleRec(${m.id}, ${hasRec})">تعديل</button></td>` : ''}
+            ${isAdmin?`<td class="admin-only"><button class="admin-btn" onclick="toggleRec(${m.id},${hasRec})">تعديل</button></td>`:''}
         </tr>`;
     });
-    document.getElementById('payoutTableBody').innerHTML = rHtml;
+    document.getElementById('payoutTableBody').innerHTML=rHtml;
 }
 
-function verify(id) {
-    const code = document.getElementById('c-' + id).value;
-    db.ref('secret_codes/' + id).once('value', snap => {
-        if(String(code) === String(snap.val())) {
-            db.ref(`payments/${monthKey}/${id}`).set({ status:true, date:new Date().toLocaleDateString('ar-EG') });
-        } else { alert("الكود خطأ"); }
+// التحقق من الكود السري لكل عضو
+function verify(id){
+    const code=document.getElementById('c-'+id).value;
+    if(!code){ showAlert("❌ يرجى إدخال الكود"); return; }
+    db.ref('secret_codes/'+id).once('value',snap=>{
+        if(String(code)===String(snap.val())){
+            const dateStr=new Date().toLocaleDateString('ar-EG');
+            db.ref(`payments/${monthKey}/${id}`).set({status:true,date:dateStr});
+            showAlert("✅ تم تأكيد الدفع");
+        } else {
+            showAlert("❌ الكود غير صحيح!");
+            document.getElementById('c-'+id).value='';
+        }
     });
 }
 
-function toggleRec(id, status) { db.ref(`received_totals/${id}`).set(!status); }
+// تعديل سجل الاستلام (Admin)
+function toggleRec(id,status){ db.ref(`received_totals/${id}`).set(!status); }
 
-function resetMonth() {
-    if(confirm("تصفير جميع دفعات هذا الشهر؟")) {
-        db.ref(`payments/${monthKey}`).remove();
+// تصفير الشهر
+function resetMonth(){ if(confirm("تصفير جميع دفعات هذا الشهر؟")) db.ref(`payments/${monthKey}`).remove(); }
+
+// نافذة تسجيل دخول المسؤول
+function adminLoginPrompt(){ document.getElementById('adminSection').style.display='block'; window.scrollTo(0,document.body.scrollHeight); }
+
+// تذكير يوم 22 لمن لم يسدد
+function checkLatePayments(payments){
+    const today=new Date().getDate();
+    if(today>=22){
+        let late=false;
+        members.forEach(m=>{ if(!payments[m.id] || payments[m.id].status!==true) late=true; });
+        if(late) setTimeout(()=>showAlert("⚠️ تذكير: اليوم "+today+" وهناك أعضاء لم يسددوا القسط بعد."),2000);
     }
-}
-
-function adminLoginPrompt() {
-    document.getElementById('adminSection').style.display = 'block';
-    window.scrollTo(0, document.body.scrollHeight);
 }
 </script>
 </body>
