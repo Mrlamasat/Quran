@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spaarkring - نظام الإدارة والتنبيهات</title>
+    <title>Spaarkring - Dashboard</title>
     
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
@@ -20,20 +20,29 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; text-align: center; direction: rtl; }
-        .container { max-width: 500px; margin: 20px auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { color: #1a73e8; cursor: pointer; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; text-align: center; direction: rtl; margin: 0; padding: 10px; }
+        .container { max-width: 500px; margin: 10px auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #1a73e8; cursor: pointer; margin-bottom: 5px; }
         .status-card { background: #e8f4fd; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; border-right: 5px solid #1a73e8; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { padding: 10px 5px; border-bottom: 1px solid #eee; font-size: 0.85em; }
         .paid { color: #27ae60; font-weight: bold; }
         .not-paid { color: #e74c3c; font-weight: bold; }
-        .btn-verify { background: #27ae60; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+        .btn-verify { background: #27ae60; color: white; border: none; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         
+        /* تصميم نافذة التنبيه المخصصة (بدون روابط) */
+        .custom-alert { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
+        .alert-content { background-color: white; margin: 30% auto; padding: 25px; border-radius: 15px; width: 80%; max-width: 350px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
+        .alert-btn { background: #1a73e8; color: white; border: none; padding: 10px 30px; border-radius: 8px; cursor: pointer; margin-top: 20px; font-weight: bold; width: 100%; }
+        
+        /* تنسيق خانة إدخال الكود (أرقام فقط) */
+        .code-input { width: 60px; text-align: center; padding: 5px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; }
+        /* إخفاء أسهم الزيادة والنقصان في حقول الأرقام */
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
         #adminPanel { display: none; margin-top: 30px; border-top: 2px dashed #dc3545; padding: 15px; background: #fffdfd; border-radius: 10px; }
         .admin-input { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
         .btn-reset { background: #c0392b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
-        
         .payout-container { background:#f9fffb; padding:15px; border-radius:10px; margin-top:30px; border: 1px solid #d1fae5; }
         .toggle-btn { background: #3182ce; color: white; border: none; padding: 3px 6px; border-radius: 3px; font-size: 0.7em; cursor: pointer; }
     </style>
@@ -65,7 +74,6 @@
             <input type="password" id="pass" placeholder="كلمة المرور" class="admin-input">
             <button onclick="loginAdmin()" style="background:#2c3e50; color:white; width:95%; padding:10px; border:none; border-radius:5px;">دخول</button>
         </div>
-        
         <div id="adminControls" style="display:none;">
             <p style="color:#27ae60; font-weight:bold;">مرحباً يا محمد</p>
             <button onclick="resetMonthData()" class="btn-reset">⚠️ تصفير سجل الشهر الجديد</button>
@@ -74,8 +82,14 @@
     </div>
 </div>
 
+<div id="myAlert" class="custom-alert">
+    <div class="alert-content">
+        <p id="alertMsg" style="color: #333; font-size: 1.1em; line-height: 1.5;"></p>
+        <button onclick="closeAlert()" class="alert-btn">موافق</button>
+    </div>
+</div>
+
 <script>
-// إعدادات Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4xFy5ylz9I",
     authDomain: "jamia-app-5bd27.firebaseapp.com",
@@ -94,13 +108,20 @@ const monthKey = new Date().getFullYear() + "-" + (new Date().getMonth() + 1).to
 
 document.getElementById('monthLabel').innerText = "سجل شهر: " + new Date().toLocaleDateString('ar-EG', {month:'long', year:'numeric'});
 
-// دالة إرسال التنبيه التلقائي
+function showAlert(msg) {
+    document.getElementById('alertMsg').innerHTML = msg;
+    document.getElementById('myAlert').style.display = 'block';
+}
+function closeAlert() {
+    document.getElementById('myAlert').style.display = 'none';
+}
+
 function sendPushNotification(msg) {
     fetch('https://onesignal.com/api/v1/notifications', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Basic YOUR_REST_API_KEY' // <--- ضع مفتاحك هنا يا محمد ليعمل التنبيه
+            'Authorization': 'Basic YOUR_REST_API_KEY' // استبدل YOUR_REST_API_KEY بمفتاحك
         },
         body: JSON.stringify({
             app_id: "564eb270-ccb3-428f-b9f8-f162d56321c4",
@@ -108,7 +129,7 @@ function sendPushNotification(msg) {
             contents: { "ar": msg },
             headings: { "ar": "تنبيه Spaarkring" }
         })
-    }).catch(e => console.error("فشل إرسال التنبيه:", e));
+    });
 }
 
 auth.onAuthStateChanged(user => {
@@ -133,7 +154,7 @@ function loadData() {
             const id = i + 1;
             const paid = payments[id] && payments[id].status;
             h += `<tr><td><b>${name}</b></td><td class="${paid?'paid':'not-paid'}">${paid?'✅':'❌'}</td>
-            <td>${paid?'✔️':`<input type="password" id="in-${id}" style="width:30px;"> <button onclick="verify(${id},'${name}')" class="btn-verify">OK</button>`}</td></tr>`;
+            <td>${paid?'✔️':`<input type="number" pattern="[0-9]*" inputmode="numeric" id="in-${id}" class="code-input"> <button onclick="verify(${id},'${name}')" class="btn-verify">OK</button>`}</td></tr>`;
         });
         document.getElementById('memberTable').innerHTML = h;
 
@@ -154,20 +175,21 @@ function verify(id, name) {
         if(String(code) === String(s.val())) {
             db.ref(`payments/${monthKey}/${id}`).set({status: true, date: new Date().toLocaleDateString('ar-EG')})
             .then(() => sendPushNotification(`✅ تم تأكيد استلام مبلغ من: ${name}`));
-        } else { alert("الكود خطأ!"); }
+        } else { 
+            showAlert("❌ <b>عذراً.. الكود خطأ!</b><br>يرجى التأكد من الرقم والمحاولة مرة أخرى."); 
+        }
     });
 }
 
 function resetMonthData() {
-    if(confirm("⚠️ تصفير سجل دفعات الشهر؟")) {
-        db.ref(`payments/${monthKey}`).remove()
-        .then(() => sendPushNotification("📅 تم تصفير السجل.. يرجى البدء بدفع قسط الشهر الجديد"));
+    if(confirm("تصفير الشهر؟")) {
+        db.ref(`payments/${monthKey}`).remove().then(() => sendPushNotification("📅 تم تصفير السجل لشهر جديد"));
     }
 }
 
 function toggleRec(id, s) { db.ref(`received_totals/${id}`).set(!s); }
 function toggleAdminView() { const p = document.getElementById('adminPanel'); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; }
-function loginAdmin() { auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('pass').value).catch(e => alert(e.message)); }
+function loginAdmin() { auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('pass').value).catch(e => showAlert(e.message)); }
 function logoutAdmin() { auth.signOut().then(() => location.reload()); }
 </script>
 </body>
