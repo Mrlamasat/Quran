@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spaarkring</title>
+<title>Spaarkring - Dashboard</title>
 
 <!-- OneSignal SDK -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
@@ -51,14 +51,14 @@ th, td { padding:10px 5px; border-bottom:1px solid #eee; font-size:0.85em; }
   <h3 id="monthLabel"></h3>
 
   <table>
-    <thead><tr><th>الاسم</th><th>الحالة</th><th>تأكيد</th></tr></thead>
+    <thead><tr><th>الاسم</th><th>الحالة</th><th></th></tr></thead>
     <tbody id="memberTable"></tbody>
   </table>
 
   <div class="payout-container">
     <h3>💰 سجل استلام المبالغ</h3>
     <table>
-      <thead><tr><th>الاسم</th><th>الحالة</th><th>إجراء</th></tr></thead>
+      <thead><tr><th>الاسم</th><th>الحالة</th><th></th></tr></thead>
       <tbody id="payoutTable"></tbody>
     </table>
   </div>
@@ -101,14 +101,14 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 
-const members=["محسن","سليم","أبو محمد","مشتاق","رضوان","حمزة","علي","أبو هتان","أبو خالد","عبدالرحمن"];
+// تبديل أماكن حمزة وعبدالرحمن
+const members=["محسن","سليم","أبو محمد","مشتاق","رضوان","عبدالرحمن","علي","أبو هتان","أبو خالد","حمزة"];
 const monthKey = new Date().getFullYear() + "-" + (new Date().getMonth()+1).toString().padStart(2,'0');
 document.getElementById('monthLabel').innerText = "سجل شهر: " + new Date().toLocaleDateString('ar-EG',{month:'long', year:'numeric'});
 
 function showAlert(msg){ document.getElementById('alertMsg').innerText=msg; document.getElementById('myAlert').style.display='block'; }
 function closeAlert(){ document.getElementById('myAlert').style.display='none'; }
 
-// التحقق من تسجيل الدخول وإظهار الأدمن عند الحاجة
 auth.onAuthStateChanged(user=>{
   document.getElementById('adminPanel').style.display = 'block';
   if(!user) { auth.signInAnonymously(); loadData(false); return; }
@@ -118,7 +118,7 @@ auth.onAuthStateChanged(user=>{
 });
 
 function showAdmin(isAdmin){
-  document.getElementById('loginForm').style.display = 'none'; // مخفي دائمًا، يظهر عند الضغط على الشعار
+  document.getElementById('loginForm').style.display = 'none';
   document.getElementById('adminControls').style.display = isAdmin?'block':'none';
 }
 
@@ -147,7 +147,7 @@ function loadData(isAdmin){
     });
     document.getElementById('memberTable').innerHTML=h;
 
-    // جدول استلام المبالغ
+    // جدول استلام المبالغ مع إخفاء عمود الزر للمستخدمين العاديين
     let ph='';
     members.forEach((name,i)=>{
       const id=i+1;
@@ -162,7 +162,7 @@ function loadData(isAdmin){
   });
 }
 
-// التحقق من الدفع أو الاستلام وإرسال إشعار كامل
+// التحقق من الدفع أو الاستلام وإرسال إشعار
 function verify(id,name){
   const val = document.getElementById('in-'+id).value;
   if(!val) return showAlert("يرجى إدخال الكود");
@@ -170,47 +170,33 @@ function verify(id,name){
     if(String(val)===String(snap.val())){
       db.ref(`payments/${monthKey}/${id}`).set({status:true,date:new Date().toLocaleDateString()});
       showAlert(`✅ تم التأكيد لـ ${name}`);
-      sendPushNotification(
-        `${name} استلم الجمعية بنجاح ✅`,
-        "💰 إشعار دفع القسط",
-        "https://example.com/icon.png",
-        "https://example.com/banner.jpg",
-        "https://example.com/details",
-        [
-          {id:"view",text:"عرض التفاصيل",url:"https://example.com/details"},
-          {id:"ignore",text:"تجاهل"}
-        ]
-      );
+      sendPushNotification(`${name} استلم الجمعية بنجاح ✅`);
     }else{ showAlert("❌ الكود غير صحيح"); }
   });
 }
 
-// إرسال الإشعار عبر Vercel Function
-async function sendPushNotification(msg, title="إشعار جديد 🔔", icon=null, image=null, url=null, buttons=null){
+async function sendPushNotification(msg){
   try{
     await fetch('/api/send-notification',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ title,message:msg,icon,image,url,buttons })
+      body:JSON.stringify({ message:msg })
     });
     console.log("Notification sent:", msg);
   }catch(e){ console.error("Notification Error:", e); }
 }
 
-// إعادة تصفير الشهر
 function resetMonthData(){
   if(confirm("هل أنت متأكد من إعادة ضبط سجل هذا الشهر؟")){
     db.ref('payments/'+monthKey).remove().then(()=>{
       showAlert("📅 تم إعادة ضبط سجل الشهر بنجاح");
-      sendPushNotification("📅 تم إعادة ضبط سجل الشهر بنجاح","📅 تحديث سجل الشهر");
+      sendPushNotification("📅 تم إعادة ضبط سجل الشهر بنجاح");
     });
   }
 }
 
-// باقي الدوال
 function toggleRec(id,s){ 
   db.ref('received_totals/'+id).set(!s); 
-  // إرسال إشعار عند تعديل الاستلام
   const name = document.querySelector(`#payoutTable tr:nth-child(${id}) td:first-child`).innerText;
   if(!s) sendPushNotification(`${name} استلم الجمعية بنجاح ✅`);
 }
