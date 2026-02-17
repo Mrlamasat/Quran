@@ -3,31 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spaarkring - Fixed</title>
+<title>Spaarkring - Dashboard</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
 <style>
-    body { font-family:'Segoe UI', sans-serif; background:#f0f4f8; padding:10px; text-align:center; direction: rtl; }
-    .container { max-width:100%; margin:auto; background:white; padding:20px; border-radius:20px; box-shadow:0 10px 20px rgba(0,0,0,0.1); border-top:8px solid #1a73e8; }
-    h1 { color:#1a73e8; cursor:pointer; }
-    table { width:100%; border-collapse:collapse; margin-top:20px; }
-    th, td { padding:10px 5px; border-bottom:1px solid #eee; text-align:center; font-size:0.9em; }
-    .paid { color:#28a745; font-weight:bold; }
-    .not-paid { color:#dc3545; font-weight:bold; }
-    #adminSection { display:none; margin-top:30px; padding:20px; border:2px solid #dc3545; border-radius:15px; background:#fff5f5; }
-    .admin-input { width:90%; margin-bottom:10px; padding:8px; border:1px solid #ccc; border-radius:5px; }
-    input[type="password"] { width:50px; padding:5px; text-align:center; border:1px solid #ddd; border-radius:4px; }
-    button { background:#34a853; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; }
+body { font-family:'Segoe UI', sans-serif; background:#f0f4f8; text-align:center; padding:10px; }
+.container { max-width:100%; margin:auto; background:white; padding:20px; border-radius:20px; box-shadow:0 10px 20px rgba(0,0,0,0.1); border-top:8px solid #1a73e8; }
+h1 { color:#1a73e8; cursor:pointer; }
+.payment-notice { background:#e8f0fe; border:1px solid #1a73e8; padding:15px; border-radius:12px; margin-bottom:20px; font-weight:bold; }
+.payout-info { background:#e6ffed; border:2px dashed #34a853; color:#2e7d32; padding:15px; border-radius:12px; margin-top:20px; font-weight:bold; }
+table { width:100%; border-collapse:collapse; margin-top:10px; table-layout: fixed; }
+th, td { padding:10px 2px; border-bottom:1px solid #eee; text-align:center; font-size:0.9em; }
+.paid { color:#28a745; font-weight:bold; }
+.not-paid { color:#dc3545; font-weight:bold; }
+input { width:50px; padding:5px; text-align:center; border:1px solid #ddd; border-radius:4px; }
+button { background:#34a853; color:white; border:none; padding:6px 10px; border-radius:5px; cursor:pointer; }
+#adminSection { display:none; margin-top:20px; padding:15px; border:2px solid #dc3545; border-radius:15px; background:#fff5f5; }
+.admin-input { width:90%; margin-bottom:10px; padding:8px; border:1px solid #ccc; border-radius:5px; }
 </style>
 </head>
 <body>
 
 <div class="container">
-    <h1 onclick="adminLoginPrompt()">Spaarkring</h1>
-    <div style="background:#e8f0fe; padding:15px; border-radius:12px; margin-bottom:20px;">
+    <h1 onclick="showAdminLogin()">Spaarkring</h1>
+    <div class="payment-notice">
         📢 القسط: 400 يورو | 📅 الموعد: 22 من الشهر
     </div>
 
@@ -36,45 +38,42 @@
         <thead>
             <tr><th>الاسم</th><th>الحالة</th><th>التاريخ</th><th>تأكيد</th></tr>
         </thead>
-        <tbody id="tableBody">
-            <tr><td colspan="4">جاري تحميل الأسماء...</td></tr>
-        </tbody>
+        <tbody id="tableBody"></tbody>
     </table>
 
-    <h2 style="margin-top:40px;">سجل استلام المبالغ</h2>
-    <table>
-        <thead>
-            <tr><th>الاسم</th><th>حالة الاستلام</th><th class="admin-only" style="display:none;">تحكم</th></tr>
-        </thead>
-        <tbody id="payoutTableBody"></tbody>
-    </table>
+    <div class="payout-info">
+        💰 يستلم كل عضو مبلغ: 4000 يورو
+        <table style="margin-top:10px;">
+            <thead><tr><th>الاسم</th><th>حالة الاستلام</th></tr></thead>
+            <tbody id="payoutTableBody"></tbody>
+        </table>
+    </div>
 
     <div id="adminSection">
-        <h3 style="color:#dc3545;">لوحة المسؤول</h3>
-        <input type="email" id="adminEmail" placeholder="الإيميل" class="admin-input"><br>
-        <input type="password" id="adminPass" placeholder="الباسورد" class="admin-input"><br>
-        <button onclick="handleLogin()" style="background:#dc3545; width:90%; padding:10px;">دخول</button>
-        <hr>
-        <button onclick="resetMonth()" style="background:#666; width:90%; padding:8px; margin-top:10px;">تصفير الشهر</button>
-        <button onclick="logout()" style="background:#444; width:90%; padding:8px; margin-top:10px;">خروج</button>
+        <h3 style="color:#dc3545;">تسجيل المسؤول</h3>
+        <input type="email" id="adminEmail" placeholder="البريد الإلكتروني" class="admin-input"><br>
+        <input type="password" id="adminPass" placeholder="كلمة المرور" class="admin-input"><br>
+        <button onclick="handleLogin()" style="background:#dc3545; width:90%;">دخول المسؤول</button><br><br>
+        <button onclick="resetMonth()" style="background:#666; width:90%;">تصفير سجل الشهر</button><br><br>
+        <button onclick="logout()" style="background:#444; width:90%;">خروج</button>
     </div>
 </div>
 
 <script>
-// المفتاح الجديد والمفعل من صورك
 const firebaseConfig = {
-  apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4xFy5ylz9I",
-  authDomain: "jamia-app-5bd27.firebaseapp.com",
-  databaseURL: "https://jamia-app-5bd27-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "jamia-app-5bd27",
-  storageBucket: "jamia-app-5bd27.appspot.com",
-  messagingSenderId: "870308712173",
-  appId: "1:870308712173:web:be101df99fef412f7886e4"
+    apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4qU4v170M",
+    authDomain: "jamia-app-5bd27.firebaseapp.com",
+    databaseURL: "https://jamia-app-5bd27-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "jamia-app-5bd27",
+    storageBucket: "jamia-app-5bd27.appspot.com",
+    messagingSenderId: "870308712173",
+    appId: "1:870308712173:web:be101df99fef2085b344a2"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
+
+const adminUID = "k7l8SxQlgnVjrfDWGnXGprwdSYy1"; // UID المسؤول
 
 const members = [
     { id:1, name:"محسن" }, { id:2, name:"سليم" }, { id:3, name:"أبو محمد" },
@@ -86,26 +85,20 @@ const members = [
 const monthKey = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
 document.getElementById("monthTitle").innerText = "سجل شهر: " + new Date().toLocaleDateString('ar-EG',{month:'long', year:'numeric'});
 
-// الدخول التلقائي لضمان جلب البيانات
+// الدخول المجهول لعرض الجدول للجميع
 auth.onAuthStateChanged(user => {
-    if (user && !user.isAnonymous) {
-        document.getElementById('adminSection').style.display = 'block';
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'table-cell');
-    } else if (!user) {
+    if(!user){
         auth.signInAnonymously();
     }
-    fetchData(); // جلب البيانات في كل الحالات
+    renderData();
 });
 
-function fetchData() {
+function renderData() {
     db.ref().on('value', snapshot => {
         const data = snapshot.val() || {};
-        const payments = data.payments ? (data.payments[monthKey] || {}) : {};
+        const payments = (data.payments && data.payments[monthKey]) || {};
         const received = data.received_totals || {};
         renderTables(payments, received);
-    }, error => {
-        console.error("خطأ في جلب البيانات:", error);
-        alert("تنبيه: يرجى التأكد من إعدادات القواعد (Rules) في Firebase");
     });
 }
 
@@ -116,46 +109,50 @@ function renderTables(payments, received) {
         const isPaid = p.status === true;
         html += `<tr>
             <td><strong>${m.name}</strong></td>
-            <td class="${isPaid?'paid':'not-paid'}">${isPaid?'✅':'❌'}</td>
-            <td>${isPaid ? p.date : '-'}</td>
+            <td class="${isPaid?'paid':'not-paid'}">${isPaid?'✅ مدفوع':'❌ غير مدفوع'}</td>
+            <td>${isPaid?p.date:'-'}</td>
             <td>${isPaid?'✔️':`<input type="password" id="c-${m.id}" placeholder="***"><button onclick="verify(${m.id})">OK</button>`}</td>
         </tr>`;
     });
     document.getElementById('tableBody').innerHTML = html;
 
     let rHtml = '';
-    const isAdmin = auth.currentUser && !auth.currentUser.isAnonymous;
-    members.forEach(m => {
+    members.forEach(m=>{
         const hasRec = received[m.id] === true;
-        rHtml += `<tr>
-            <td>${m.name}</td>
-            <td><span class="${hasRec?'paid':'not-paid'}">${hasRec?'تم الاستلام ✅':'لم يستلم'}</span></td>
-            ${isAdmin ? `<td class="admin-only"><button onclick="toggleRec(${m.id}, ${hasRec})">تعديل</button></td>` : ''}
-        </tr>`;
+        rHtml += `<tr><td>${m.name}</td><td class="${hasRec?'paid':'not-paid'}">${hasRec?'تم الاستلام ✅':'لم يستلم'}</td></tr>`;
     });
     document.getElementById('payoutTableBody').innerHTML = rHtml;
 }
 
-function verify(id) {
-    const code = document.getElementById('c-' + id).value;
-    db.ref('secret_codes/' + id).once('value', snap => {
-        if(String(code) === String(snap.val())) {
-            db.ref(`payments/${monthKey}/${id}`).set({ status:true, date:new Date().toLocaleDateString('ar-EG') });
-            alert("تم التأكيد بنجاح");
-        } else { alert("الكود خطأ!"); }
+function verify(id){
+    const code = document.getElementById('c-'+id).value.trim();
+    if(!code){ alert("❌ يرجى إدخال الكود"); return; }
+    db.ref(`secret_codes/${id}`).once('value').then(snap=>{
+        if(String(code)===String(snap.val())){
+            db.ref(`payments/${monthKey}/${id}`).set({status:true,date:new Date().toLocaleDateString('ar-EG')})
+            .then(()=> alert("✅ تم تأكيد الدفع"));
+        } else { alert("❌ الكود غير صحيح!"); document.getElementById('c-'+id).value=''; }
     });
 }
 
-function handleLogin() {
-    const email = document.getElementById('adminEmail').value;
-    const pass = document.getElementById('adminPass').value;
-    auth.signInWithEmailAndPassword(email, pass).catch(err => alert("خطأ: " + err.message));
+function showAdminLogin(){ document.getElementById('adminSection').style.display='block'; window.scrollTo(0, document.body.scrollHeight); }
+
+function handleLogin(){
+    const email=document.getElementById('adminEmail').value;
+    const pass=document.getElementById('adminPass').value;
+    auth.signInWithEmailAndPassword(email, pass)
+        .then(()=> alert("✅ تم تسجيل الدخول كمسؤول"))
+        .catch(err=> alert("❌ "+err.message));
 }
 
-function logout() { auth.signOut().then(() => location.reload()); }
-function toggleRec(id, status) { db.ref(`received_totals/${id}`).set(!status); }
-function resetMonth() { if(confirm("تصفير الشهر؟")) db.ref(`payments/${monthKey}`).remove(); }
-function adminLoginPrompt() { document.getElementById('adminSection').style.display = 'block'; window.scrollTo(0, document.body.scrollHeight); }
+function logout(){ auth.signOut().then(()=> location.reload()); }
+
+function resetMonth(){
+    if(confirm("هل تريد تصفير سجل الدفعات لهذا الشهر؟")){
+        db.ref(`payments/${monthKey}`).remove().then(()=> alert("✅ تم تصفير سجل الشهر."));
+    }
+}
 </script>
+
 </body>
 </html>
