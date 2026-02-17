@@ -1,11 +1,13 @@
-export default async function handler(req, res) {
+const fetch = require('node-fetch');
+
+module.exports = async (req, res) => {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
     const { message } = req.body;
 
-    // المفاتيح مكتوبة هنا مباشرة لضمان العمل 100% وتجاوز خطأ Access Denied
+    // المفاتيح محفورة داخل الكود لضمان العمل الفوري
     const APP_ID = "564eb270-ccb3-428f-b9f8-f162d56321c4";
     const REST_KEY = "Os_v2_app_kzhle4gmwnbi7opy6frnkyzbyrqitvovpu2ugku5pdtd33igz22kb3h6ycqmph2yyzw2uooxfi3k3uvccboabgo34a3pghyolftacda";
 
@@ -14,7 +16,7 @@ export default async function handler(req, res) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
-                "Authorization": `Basic ${REST_KEY}` 
+                "Authorization": "Basic " + REST_KEY
             },
             body: JSON.stringify({
                 app_id: APP_ID,
@@ -29,8 +31,4 @@ export default async function handler(req, res) {
     } catch (e) {
         return res.status(500).json({ success: false, error: e.message });
     }
-}
-        console.error("Fetch Error:", e.message);
-        return res.status(500).json({ success: false, error: e.message });
-    }
-}
+};
