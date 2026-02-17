@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spaarkring - Admin Toggle Control</title>
+<title>Spaarkring - Public Log & Admin Control</title>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -14,17 +14,17 @@
     h1 { color: #1a73e8; cursor: pointer; }
     .status-card { background: #e8f4fd; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { padding: 12px 5px; border-bottom: 1px solid #eee; font-size: 0.9em; }
+    th, td { padding: 10px 5px; border-bottom: 1px solid #eee; font-size: 0.85em; }
     .paid { color: #27ae60; font-weight: bold; }
     .not-paid { color: #e74c3c; font-weight: bold; }
-    .btn-verify { background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+    .btn-verify { background: #27ae60; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
     
-    #adminPanel { display: none; margin-top: 30px; border-top: 3px solid #dc3545; padding: 15px; background: #fffdfd; border-radius: 10px; }
+    #adminPanel { display: none; margin-top: 30px; border-top: 2px dashed #dc3545; padding: 15px; background: #fffdfd; border-radius: 10px; }
     .admin-input { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
-    .btn-reset { background: #c0392b; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+    .btn-reset { background: #c0392b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
     
-    #payoutSection { display: none; background:#f0fff4; padding:15px; border-radius:10px; margin-top:20px; border: 1px solid #c6f6d5; }
-    .toggle-btn { background: #2980b9; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
+    .payout-container { background:#f9fffb; padding:15px; border-radius:10px; margin-top:30px; border: 1px solid #d1fae5; }
+    .toggle-btn { background: #3182ce; color: white; border: none; padding: 3px 6px; border-radius: 3px; font-size: 0.7em; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -39,21 +39,29 @@
         <tbody id="memberTable"></tbody>
     </table>
 
+    <div class="payout-container">
+        <h3 style="color:#2d3748; margin-top:0;">💰 سجل استلام المبالغ (4000€)</h3>
+        <table>
+            <thead>
+                <tr id="payoutHeader"><th>الاسم</th><th>حالة الاستلام</th></tr>
+            </thead>
+            <tbody id="payoutTable"></tbody>
+        </table>
+    </div>
+
     <div id="adminPanel">
         <div id="loginForm">
-            <h3 style="color:#c0392b;">دخول المسؤول</h3>
+            <h4 style="color:#c0392b;">دخول المسؤول</h4>
             <input type="email" id="email" placeholder="الإيميل" class="admin-input">
             <input type="password" id="pass" placeholder="كلمة المرور" class="admin-input">
             <button onclick="loginAdmin()" style="background:#2c3e50; color:white; width:95%; padding:10px; border:none; border-radius:5px;">دخول</button>
         </div>
-
-        <div id="payoutSection">
-            <h3 style="color:#2d3748; margin-top:0;">💰 سجل استلام المبالغ (4000€)</h3>
-            <table><tbody id="payoutTable"></tbody></table>
-            <button onclick="resetMonthData()" class="btn-reset">⚠️ تصفير سجل الشهر الجديد</button>
-        </div>
         
-        <button onclick="logoutAdmin()" id="logoutBtn" style="display:none; background:#95a5a6; color:white; border:none; padding:8px; border-radius:5px; margin-top:20px; width:95%;">خروج</button>
+        <div id="adminControls" style="display:none;">
+            <p style="color:#27ae60; font-weight:bold;">أهلاً بك يا محمد (المسؤول)</p>
+            <button onclick="resetMonthData()" class="btn-reset">⚠️ تصفير سجل الشهر الجديد</button>
+            <button onclick="logoutAdmin()" style="background:#95a5a6; color:white; border:none; padding:8px; border-radius:5px; margin-top:20px; width:95%;">خروج</button>
+        </div>
     </div>
 </div>
 
@@ -79,9 +87,12 @@ document.getElementById('monthLabel').innerText = "سجل شهر: " + new Date()
 
 auth.onAuthStateChanged(user => {
     const isAdmin = user && !user.isAnonymous;
-    document.getElementById('payoutSection').style.display = isAdmin ? 'block' : 'none';
     document.getElementById('loginForm').style.display = isAdmin ? 'none' : 'block';
-    document.getElementById('logoutBtn').style.display = isAdmin ? 'block' : 'none';
+    document.getElementById('adminControls').style.display = isAdmin ? 'block' : 'none';
+    
+    // تعديل رأس الجدول لإضافة عمود التحكم للمسؤول فقط
+    const header = document.getElementById('payoutHeader');
+    header.innerHTML = `<th>الاسم</th><th>حالة الاستلام</th>${isAdmin ? '<th>تحكم</th>' : ''}`;
     
     if(!user) auth.signInAnonymously();
     loadData();
@@ -94,23 +105,21 @@ function loadData() {
         const received = data.received_totals || {};
         const isAdmin = auth.currentUser && !auth.currentUser.isAnonymous;
         
-        // جدول الأعضاء
         let h = '';
         members.forEach((name, i) => {
             const id = i + 1;
             const paid = payments[id] && payments[id].status;
             h += `<tr><td><b>${name}</b></td><td class="${paid?'paid':'not-paid'}">${paid?'✅':'❌'}</td>
-            <td>${paid?'✔️':`<input type="password" id="in-${id}" style="width:35px;"> <button onclick="verify(${id})" class="btn-verify">OK</button>`}</td></tr>`;
+            <td>${paid?'✔️':`<input type="password" id="in-${id}" style="width:30px;"> <button onclick="verify(${id})" class="btn-verify">OK</button>`}</td></tr>`;
         });
         document.getElementById('memberTable').innerHTML = h;
 
-        // جدول الاستلام (أزرار التبديل تظهر للمسؤول فقط)
         let ph = '';
         members.forEach((name, i) => {
             const id = i + 1;
             const rec = received[id] === true;
-            ph += `<tr><td>${name}</td><td class="${rec?'paid':'not-paid'}">${rec?'استلم ✅':'لم يستلم'}</td>
-            <td>${isAdmin ? `<button onclick="toggleRec(${id},${rec})" class="toggle-btn">تبديل</button>` : ''}</td></tr>`;
+            ph += `<tr><td>${name}</td><td class="${rec?'paid':'not-paid'}">${rec?'تم الاستلام ✅':'لم يستلم'}</td>
+            ${isAdmin ? `<td><button onclick="toggleRec(${id},${rec})" class="toggle-btn">تبديل</button></td>` : ''}</tr>`;
         });
         document.getElementById('payoutTable').innerHTML = ph;
     });
@@ -126,7 +135,7 @@ function verify(id) {
 }
 
 function toggleRec(id, s) { db.ref(`received_totals/${id}`).set(!s); }
-function resetMonthData() { if(confirm("تصفير الشهر؟")) db.ref(`payments/${monthKey}`).remove(); }
+function resetMonthData() { if(confirm("تصفير سجل دفعات هذا الشهر؟")) db.ref(`payments/${monthKey}`).remove(); }
 function toggleAdminView() { const p = document.getElementById('adminPanel'); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; }
 function loginAdmin() { auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('pass').value).catch(e => alert(e.message)); }
 function logoutAdmin() { auth.signOut().then(() => location.reload()); }
