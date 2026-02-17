@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spaarkring - Secure</title>
+<title>Spaarkring - Admin Pro</title>
 
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
@@ -20,17 +20,17 @@
 <style>
     body { font-family: 'Segoe UI', sans-serif; background:#f0f4f8; padding:10px; text-align:center; }
     .container { max-width:100%; margin:auto; background:white; padding:20px; border-radius:20px; box-shadow:0 10px 20px rgba(0,0,0,0.1); border-top:8px solid #1a73e8; margin-bottom:20px; }
-    h1 { color:#1a73e8; margin-bottom:15px; }
+    h1 { color:#1a73e8; margin-bottom:15px; cursor: pointer; }
     .payment-notice { background:#e8f0fe; border:1px solid #1a73e8; padding:15px; border-radius:12px; margin-bottom:20px; font-weight:bold; }
     .payout-info { background-color:#e6ffed; border:2px dashed #34a853; color:#2e7d32; padding:15px; border-radius:12px; margin-top:20px; }
     table { width:100%; border-collapse:collapse; margin-top:10px; table-layout: fixed; }
     th,td { padding:10px 2px; border-bottom:1px solid #eee; text-align:center; font-size: 0.85em; }
     .paid { color:#28a745; font-weight:bold; }
     .not-paid { color:#dc3545; font-weight:bold; }
-    .received-btn { background:#1a73e8; color:white; border:none; padding:5px; border-radius:5px; cursor:pointer; font-size:0.8em; }
+    .admin-btn { background:#1a73e8; color:white; border:none; padding:5px; border-radius:5px; cursor:pointer; font-size:0.8em; margin: 2px; }
+    .reset-btn { background:#dc3545; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; margin-top:15px; width: 100%; font-weight: bold; }
     #adminSection { display:none; margin-top:30px; padding:20px; border:2px solid #dc3545; border-radius:15px; background:#fff5f5; }
-    .login-trigger { margin-top:50px; color:#ddd; font-size:0.7em; cursor:pointer; }
-    input { width:50px; padding:5px; text-align:center; border:1px solid #ddd; border-radius:4px; }
+    input { width:45px; padding:5px; text-align:center; border:1px solid #ddd; border-radius:4px; }
     .admin-input { width: 85%; margin-bottom:10px; padding:8px; border:1px solid #ccc; border-radius:5px; }
 </style>
 </head>
@@ -52,25 +52,27 @@
     </table>
 
     <div class="payout-info">
-        <span style="font-weight:bold; font-size:1.2em;">💰 يستلم كل عضو مبلغ: 4000 يورو</span>
+        <span style="font-weight:bold; font-size:1.1em;">💰 يستلم كل عضو مبلغ: 4000 يورو</span>
         <table style="margin-top:15px;">
-            <thead><tr><th>الاسم</th><th>حالة الاستلام</th><th id="adminHeader" style="display:none;">تحكم</th></tr></thead>
+            <thead><tr><th>الاسم</th><th>حالة الاستلام</th><th class="admin-only" style="display:none;">تحكم</th></tr></thead>
             <tbody id="payoutTableBody"></tbody>
         </table>
     </div>
 
     <div id="adminSection">
-        <h3 style="color:#dc3545;">لوحة تحكم المسؤول</h3>
+        <h3 style="color:#dc3545;">لوحة تحكم المسؤول (محمد)</h3>
         <input type="email" id="adminEmail" placeholder="البريد الإلكتروني" class="admin-input"><br>
         <input type="password" id="adminPass" placeholder="كلمة المرور" class="admin-input"><br>
-        <button onclick="handleLogin()" style="background:#dc3545; width:85%; padding:10px; color:white; border:none; border-radius:5px; cursor:pointer;">دخول المسؤول</button>
-        <button onclick="logout()" style="margin-top:10px; background:#666; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">خروج</button>
+        <button onclick="handleLogin()" style="background:#dc3545; width:85%; padding:10px; color:white; border:none; border-radius:5px;">دخول</button>
+        <hr>
+        <p style="font-size: 0.9em;">أدوات المسؤول:</p>
+        <button class="reset-btn" onclick="resetMonth()">⚠️ تصفير جدول الشهر الجديد</button>
+        <button onclick="logout()" style="margin-top:15px; background:#666; color:white; border:none; padding:8px; border-radius:5px; width:100%;">خروج</button>
     </div>
-    <div class="login-trigger" onclick="adminLoginPrompt()">إدارة النظام</div>
 </div>
 
 <script>
-// الإعدادات الجديدة التي أرسلتها يا محمد
+// الإعدادات الجديدة (المصلحة)
 const firebaseConfig = {
   apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4xFy5ylz9I",
   authDomain: "jamia-app-5bd27.firebaseapp.com",
@@ -95,12 +97,11 @@ const members = [
 const monthKey = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
 document.getElementById("monthTitle").innerText = "سجل شهر: " + new Date().toLocaleDateString('ar-EG',{month:'long', year:'numeric'});
 
-// مراقبة حالة تسجيل الدخول للتحكم في اللوحة
 auth.onAuthStateChanged(user => {
     if (user && !user.isAnonymous) {
         document.getElementById('adminSection').style.display = 'block';
-        document.getElementById('adminHeader').style.display = 'table-cell';
-    } else if (!user) {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'table-cell');
+    } else {
         auth.signInAnonymously();
     }
 });
@@ -108,9 +109,7 @@ auth.onAuthStateChanged(user => {
 function handleLogin() {
     const email = document.getElementById('adminEmail').value;
     const pass = document.getElementById('adminPass').value;
-    auth.signInWithEmailAndPassword(email, pass)
-        .then(() => { alert("أهلاً بك يا محمد"); })
-        .catch(err => alert("خطأ: " + err.message));
+    auth.signInWithEmailAndPassword(email, pass).catch(err => alert("خطأ: " + err.message));
 }
 
 function logout() { auth.signOut().then(() => location.reload()); }
@@ -120,7 +119,7 @@ db.ref().on('value', snapshot => {
     const payments = data.payments ? (data.payments[monthKey] || {}) : {};
     const received = data.received_totals || {};
 
-    // تحديث جدول الأقساط
+    // جدول الأقساط
     let html = '';
     members.forEach(m => {
         const p = payments[m.id] || {};
@@ -134,7 +133,7 @@ db.ref().on('value', snapshot => {
     });
     document.getElementById('tableBody').innerHTML = html;
 
-    // تحديث جدول الاستلام
+    // جدول الاستلام (مع زر تعديل للمسؤول)
     let rHtml = '';
     const isAdmin = auth.currentUser && !auth.currentUser.isAnonymous;
     members.forEach(m => {
@@ -142,7 +141,7 @@ db.ref().on('value', snapshot => {
         rHtml += `<tr>
             <td>${m.name}</td>
             <td><span class="${hasRec?'paid':'not-paid'}">${hasRec?'تم الاستلام ✅':'لم يستلم'}</span></td>
-            ${isAdmin ? `<td><button class="received-btn" onclick="toggleReceived(${m.id}, ${hasRec})">تبديل</button></td>` : ''}
+            ${isAdmin ? `<td class="admin-only"><button class="admin-btn" onclick="toggleReceived(${m.id}, ${hasRec})">تبديل</button></td>` : ''}
         </tr>`;
     });
     document.getElementById('payoutTableBody').innerHTML = rHtml;
@@ -150,7 +149,6 @@ db.ref().on('value', snapshot => {
 
 function verify(id) {
     const code = document.getElementById('c-' + id).value;
-    if(!code) return;
     db.ref('secret_codes/' + id).once('value', snap => {
         if(String(code) === String(snap.val())) {
             db.ref(`payments/${monthKey}/${id}`).set({ status:true, date:new Date().toLocaleDateString('ar-EG') });
@@ -158,8 +156,12 @@ function verify(id) {
     });
 }
 
-function toggleReceived(id, currentStatus) {
-    db.ref(`received_totals/${id}`).set(!currentStatus);
+function toggleReceived(id, status) { db.ref(`received_totals/${id}`).set(!status); }
+
+function resetMonth() {
+    if(confirm("هل أنت متأكد من تصفير جدول الدفع لهذا الشهر؟")) {
+        db.ref(`payments/${monthKey}`).remove().then(() => alert("تم التصفير بنجاح"));
+    }
 }
 
 function adminLoginPrompt() {
