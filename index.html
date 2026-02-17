@@ -24,6 +24,7 @@ button { background:#34a853; color:white; border:none; padding:6px 10px; border-
 #adminSection { display:none; margin-top:20px; padding:15px; border:2px solid #dc3545; border-radius:15px; background:#fff5f5; }
 .admin-input { width:90%; margin-bottom:10px; padding:8px; border:1px solid #ccc; border-radius:5px; }
 .edit-btn { background:#1a73e8; font-size:0.75em; padding:3px 6px; margin-right:5px; }
+.reset-btn { background:#dc3545; width:90%; font-weight:bold; padding:12px; margin-top:10px; }
 </style>
 </head>
 <body>
@@ -54,14 +55,16 @@ button { background:#34a853; color:white; border:none; padding:6px 10px; border-
         <h3 style="color:#dc3545;">لوحة تحكم المسؤول (محمد)</h3>
         <input type="email" id="adminEmail" placeholder="البريد الإلكتروني" class="admin-input"><br>
         <input type="password" id="adminPass" placeholder="كلمة المرور" class="admin-input"><br>
-        <button onclick="handleLogin()" style="background:#dc3545; width:90%;">دخول المسؤول</button><br><br>
-        <button onclick="resetMonth()" style="background:#666; width:90%;">⚠️ تصفير سجل الشهر</button><br><br>
+        <button onclick="handleLogin()" style="background:#dc3545; width:90%;">دخول المسؤول</button>
+        <hr>
+        <button onclick="resetMonth()" class="reset-btn">⚠️ تصفير الشهر الجديد</button>
+        <p style="font-size:0.8em; color:#666;">(سيؤدي هذا لمسح جميع دفعات شهر فبراير ٢٠٢٦)</p>
+        <hr>
         <button onclick="logout()" style="background:#444; width:90%;">خروج</button>
     </div>
 </div>
 
 <script>
-// المفتاح الصحيح الذي يعمل مع الرابط الجديد
 const firebaseConfig = {
     apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4xFy5ylz9I", 
     authDomain: "jamia-app-5bd27.firebaseapp.com",
@@ -87,7 +90,12 @@ document.getElementById("monthTitle").innerText = "سجل شهر: " + new Date()
 
 auth.onAuthStateChanged(user => {
     if(!user) auth.signInAnonymously();
-    if(user && !user.isAnonymous) document.getElementById('adminSection').style.display='block';
+    // إظهار لوحة التحكم فقط للمسؤول
+    if(user && !user.isAnonymous) {
+        document.getElementById('adminSection').style.display='block';
+    } else {
+        document.getElementById('adminSection').style.display='none';
+    }
     renderData();
 });
 
@@ -138,25 +146,33 @@ function verify(id){
     });
 }
 
+// خاص بالمسؤول فقط: تصفير الشهر
+function resetMonth(){
+    if(confirm("⚠️ تحذير: هل أنت متأكد من مسح جميع دفعات هذا الشهر بالكامل؟")){
+        db.ref(`payments/${monthKey}`).remove().then(() => {
+            alert("✅ تم تصفير السجل بنجاح.");
+        }).catch(err => alert("خطأ: " + err.message));
+    }
+}
+
 function toggleRec(id, currentStatus) {
     db.ref(`received_totals/${id}`).set(!currentStatus);
 }
 
-function showAdminLogin(){ document.getElementById('adminSection').style.display='block'; window.scrollTo(0, document.body.scrollHeight); }
+function showAdminLogin(){ 
+    document.getElementById('adminSection').style.display='block'; 
+    window.scrollTo(0, document.body.scrollHeight); 
+}
 
 function handleLogin(){
     const email=document.getElementById('adminEmail').value;
     const pass=document.getElementById('adminPass').value;
-    auth.signInWithEmailAndPassword(email, pass).catch(err=> alert("❌ "+err.message));
+    auth.signInWithEmailAndPassword(email, pass)
+        .then(() => alert("تم تسجيل الدخول بنجاح"))
+        .catch(err=> alert("❌ "+err.message));
 }
 
 function logout(){ auth.signOut().then(()=> location.reload()); }
-
-function resetMonth(){
-    if(confirm("تصفير سجل الدفعات؟")){
-        db.ref(`payments/${monthKey}`).remove();
-    }
-}
 </script>
 </body>
 </html>
