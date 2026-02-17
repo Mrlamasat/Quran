@@ -1,77 +1,85 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spaarkring - Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spaarkring - Dashboard</title>
 
-<!-- Firebase v8 -->
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "ضع_هنا_APP_ID_الخاص_بك", // استبدله بـ ID التطبيق الفعلي من لوحة OneSignal
+        });
+      });
+    </script>
 
-<style>
-body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; text-align: center; direction: rtl; margin: 0; padding: 10px; }
-.container { max-width: 500px; margin: 10px auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-h1 { color: #1a73e8; cursor: pointer; margin-bottom: 5px; }
-.status-card { background: #e8f4fd; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; border-right: 5px solid #1a73e8; }
-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-th, td { padding: 10px 5px; border-bottom: 1px solid #eee; font-size: 0.85em; }
-.paid { color: #27ae60; font-weight: bold; }
-.not-paid { color: #e74c3c; font-weight: bold; }
-.btn-verify { background: #27ae60; color: white; border: none; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-.custom-alert { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
-.alert-content { background-color: white; margin: 30% auto; padding: 25px; border-radius: 15px; width: 80%; max-width: 350px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
-.alert-btn { background: #1a73e8; color: white; border: none; padding: 10px 30px; border-radius: 8px; cursor: pointer; margin-top: 20px; font-weight: bold; width: 100%; }
-.code-input { width: 60px; text-align: center; padding: 5px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; }
-input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-#adminPanel { display: none; margin-top: 30px; border-top: 2px dashed #dc3545; padding: 15px; background: #fffdfd; border-radius: 10px; }
-.admin-input { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
-.btn-reset { background: #c0392b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
-.payout-container { background:#f9fffb; padding:15px; border-radius:10px; margin-top:30px; border: 1px solid #d1fae5; }
-.toggle-btn { background: #3182ce; color: white; border: none; padding: 3px 6px; border-radius: 3px; font-size: 0.7em; cursor: pointer; }
-</style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; text-align: center; direction: rtl; margin: 0; padding: 10px; }
+        .container { max-width: 500px; margin: 10px auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #1a73e8; cursor: pointer; margin-bottom: 5px; }
+        .status-card { background: #e8f4fd; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; border-right: 5px solid #1a73e8; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px 5px; border-bottom: 1px solid #eee; font-size: 0.85em; }
+        .paid { color: #27ae60; font-weight: bold; }
+        .not-paid { color: #e74c3c; font-weight: bold; }
+        .btn-verify { background: #27ae60; color: white; border: none; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .custom-alert { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
+        .alert-content { background-color: white; margin: 30% auto; padding: 25px; border-radius: 15px; width: 80%; max-width: 350px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
+        .alert-btn { background: #1a73e8; color: white; border: none; padding: 10px 30px; border-radius: 8px; cursor: pointer; margin-top: 20px; font-weight: bold; width: 100%; }
+        .code-input { width: 60px; text-align: center; padding: 5px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; }
+        #adminPanel { display: none; margin-top: 30px; border-top: 2px dashed #dc3545; padding: 15px; background: #fffdfd; border-radius: 10px; }
+        .admin-input { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
+        .btn-reset { background: #c0392b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .payout-container { background:#f9fffb; padding:15px; border-radius:10px; margin-top:30px; border: 1px solid #d1fae5; }
+        .toggle-btn { background: #3182ce; color: white; border: none; padding: 3px 6px; border-radius: 3px; font-size: 0.7em; cursor: pointer; }
+    </style>
 </head>
 <body>
 
 <div class="container">
-<h1 onclick="toggleAdminView()">Spaarkring</h1>
-<div class="status-card">📢 القسط: 400 يورو | الموعد: 22 من الشهر</div>
-<h3 id="monthLabel"></h3>
+    <h1 onclick="toggleAdminView()">Spaarkring</h1>
+    <div class="status-card">📢 القسط: 400 يورو | الموعد: 22 من الشهر</div>
+    <h3 id="monthLabel"></h3>
 
-<table>
-<thead><tr><th>الاسم</th><th>الحالة</th><th>تأكيد</th></tr></thead>
-<tbody id="memberTable"></tbody>
-</table>
+    <table>
+        <thead><tr><th>الاسم</th><th>الحالة</th><th>تأكيد</th></tr></thead>
+        <tbody id="memberTable"></tbody>
+    </table>
 
-<div class="payout-container">
-<h3 style="color:#2d3748; margin-top:0;">💰 سجل استلام المبالغ (4000€)</h3>
-<table>
-<thead><tr id="payoutHeader"><th>الاسم</th><th>حالة الاستلام</th></tr></thead>
-<tbody id="payoutTable"></tbody>
-</table>
-</div>
+    <div class="payout-container">
+        <h3 style="color:#2d3748; margin-top:0;">💰 سجل استلام المبالغ (4000€)</h3>
+        <table>
+            <thead><tr id="payoutHeader"><th>الاسم</th><th>حالة الاستلام</th></tr></thead>
+            <tbody id="payoutTable"></tbody>
+        </table>
+    </div>
 
-<div id="adminPanel">
-<div id="loginForm">
-<h4 style="color:#c0392b;">دخول المسؤول</h4>
-<input type="email" id="email" placeholder="الإيميل" class="admin-input">
-<input type="password" id="pass" placeholder="كلمة المرور" class="admin-input">
-<button type="button" onclick="loginAdmin()" style="background:#2c3e50; color:white; width:95%; padding:10px; border:none; border-radius:5px;">دخول</button>
-</div>
-<div id="adminControls" style="display:none;">
-<p style="color:#27ae60; font-weight:bold;">مرحباً يا المسؤول</p>
-<button onclick="resetMonthData()" class="btn-reset">⚠️ تصفير سجل الشهر الجديد</button>
-<button onclick="logoutAdmin()" style="background:#95a5a6; color:white; border:none; padding:8px; border-radius:5px; margin-top:20px; width:95%;">خروج</button>
-</div>
-</div>
+    <div id="adminPanel">
+        <div id="loginForm">
+            <h4 style="color:#c0392b;">دخول المسؤول</h4>
+            <input type="email" id="email" placeholder="الإيميل" class="admin-input">
+            <input type="password" id="pass" placeholder="كلمة المرور" class="admin-input">
+            <button onclick="loginAdmin()" style="background:#2c3e50; color:white; width:95%; padding:10px; border:none; border-radius:5px;">دخول</button>
+        </div>
+        <div id="adminControls" style="display:none;">
+            <p style="color:#27ae60; font-weight:bold;">مرحباً يا المسؤول</p>
+            <button onclick="resetMonthData()" class="btn-reset">⚠️ تصفير سجل الشهر الجديد</button>
+            <button onclick="logoutAdmin()" style="background:#95a5a6; color:white; border:none; padding:8px; border-radius:5px; margin-top:20px; width:95%;">خروج</button>
+        </div>
+    </div>
 </div>
 
 <div id="myAlert" class="custom-alert">
-<div class="alert-content">
-<p id="alertMsg" style="color: #333; font-size: 1.1em; line-height: 1.5;"></p>
-<button onclick="closeAlert()" class="alert-btn">موافق</button>
-</div>
+    <div class="alert-content">
+        <p id="alertMsg" style="color: #333; font-size: 1.1em; line-height: 1.5;"></p>
+        <button onclick="closeAlert()" class="alert-btn">موافق</button>
+    </div>
 </div>
 
 <script>
@@ -89,39 +97,28 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 
-/* إعدادات عامة */
 const members = ["محسن","سليم","أبو محمد","مشتاق","رضوان","حمزة","علي","أبو هتان","أبو خالد","عبدالرحمن"];
 const monthKey = new Date().getFullYear() + "-" + (new Date().getMonth()+1).toString().padStart(2,'0');
 document.getElementById('monthLabel').innerText = "سجل شهر: "+new Date().toLocaleDateString('ar-EG',{month:'long', year:'numeric'});
 
-/* Alert */
 function showAlert(msg){ document.getElementById('alertMsg').innerHTML=msg; document.getElementById('myAlert').style.display='block'; }
 function closeAlert(){ document.getElementById('myAlert').style.display='none'; }
 
-/* Anonymous Auth للزوار */
 auth.onAuthStateChanged(user=>{
     if(!user) auth.signInAnonymously();
-
-    const admins = ["Mohammeddalmohsen@gmail.com"];
-    const isAdmin = user && !user.isAnonymous && admins.includes(user.email);
-
+    const isAdmin = user && !user.isAnonymous && user.email === "Mohammeddalmohsen@gmail.com";
     document.getElementById('loginForm').style.display = isAdmin?'none':'block';
     document.getElementById('adminControls').style.display = isAdmin?'block':'none';
-
-    const header = document.getElementById('payoutHeader');
-    header.innerHTML = `<th>الاسم</th><th>حالة الاستلام</th>${isAdmin?'<th>تحكم</th>':''}`;
     loadData();
 });
 
-/* تحميل البيانات */
 function loadData(){
     db.ref().on('value', snap=>{
         const data = snap.val() || {};
         const payments = data.payments ? (data.payments[monthKey] || {}) : {};
         const received = data.received_totals || {};
         const user = auth.currentUser;
-        const admins = ["Mohammeddalmohsen@gmail.com"];
-        const isAdmin = user && !user.isAnonymous && admins.includes(user.email);
+        const isAdmin = user && !user.isAnonymous && user.email === "Mohammeddalmohsen@gmail.com";
 
         let h='';
         members.forEach((name,i)=>{
@@ -143,24 +140,28 @@ function loadData(){
     });
 }
 
-/* تحقق الكود للزائر */
 function verify(id,name){
     const codeInput = document.getElementById('in-'+id).value;
     if(!codeInput) return showAlert("❌ الرجاء إدخال الكود أولاً");
-
     db.ref('secret_codes/'+id).once('value').then(snap=>{
-        const correctCode = snap.val();
-        if(String(codeInput) === String(correctCode)){
+        if(String(codeInput) === String(snap.val())){
             db.ref(`payments/${monthKey}/${id}`).set({status:true, date: new Date().toLocaleDateString('ar-EG')});
             showAlert(`✅ تم تأكيد الكود الخاص بـ ${name}`);
-            sendPushNotification(`✅ تم تأكيد استلام مبلغ من: ${name}`);
+            sendPushNotification(`✅ تم دفع القسط من قبل: ${name}`);
         } else {
-            showAlert("❌ الكود غير صحيح. حاول مرة أخرى.");
+            showAlert("❌ الكود غير صحيح.");
         }
     });
 }
 
-/* لوحة المسؤول */
+function sendPushNotification(msg) {
+    fetch('/api/send-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg })
+    }).catch(err => console.error("Notification Error:", err));
+}
+
 function resetMonthData(){ 
     if(confirm("تصفير الشهر؟")){
         db.ref(`payments/${monthKey}`).remove();
@@ -169,34 +170,8 @@ function resetMonthData(){
 }
 function toggleRec(id,s){ db.ref(`received_totals/${id}`).set(!s); }
 function toggleAdminView(){ const p=document.getElementById('adminPanel'); p.style.display=(p.style.display==='block')?'none':'block'; }
-
-/* تسجيل الدخول للمسؤول */
-function loginAdmin(){
-    const email = document.getElementById('email').value;
-    const pass = document.getElementById('pass').value;
-    if(!email || !pass) return showAlert("❌ الرجاء إدخال البريد وكلمة المرور");
-
-    auth.signInWithEmailAndPassword(email, pass)
-        .then(userCredential => {
-            console.log("تم تسجيل الدخول:", userCredential.user.email);
-            showAlert("✅ تم تسجيل الدخول بنجاح");
-        })
-        .catch(e=>{
-            console.error("خطأ في تسجيل الدخول:", e.message);
-            showAlert("❌ " + e.message);
-        });
-}
-
+function loginAdmin(){ auth.signInWithEmailAndPassword(document.getElementById('email').value,document.getElementById('pass').value).catch(e=>showAlert(e.message)); }
 function logoutAdmin(){ auth.signOut().then(()=>location.reload()); }
-
-/* إرسال الإشعارات */
-function sendPushNotification(msg){
-    fetch('/api/send-notification',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({message: msg})
-    });
-}
 </script>
 </body>
 </html>
