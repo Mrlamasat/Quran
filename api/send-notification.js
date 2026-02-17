@@ -1,26 +1,25 @@
 const https = require("https");
 
-module.exports = (req, res) => {
-  // إعدادات الوصول للسماح لموقعك بالاتصال
+module.exports = async (req, res) => {
+  // إعدادات CORS للسماح للموقع بالاتصال
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // إذا كان الطلب ليس POST (مثل فحص السيرفر)
-  if (req.method !== "POST") {
-    return res.status(200).send("Server is ready");
-  }
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(200).send("API is active");
 
-  // تجهيز نص الرسالة من الطلب
   const messageText = req.body && req.body.message ? req.body.message : "تنبيه من Spaarkring";
 
-  // بيانات OneSignal (المفاتيح محفورة لضمان العمل)
+  // تجهيز البيانات
   const data = JSON.stringify({
     app_id: "564eb270-ccb3-428f-b9f8-f162d56321c4",
     included_segments: ["All"],
-    contents: { ar: messageText, en: messageText }
+    contents: { ar: messageText, en: messageText },
+    headings: { ar: "تنبيه الجمعية", en: "Spaarkring Alert" }
   });
 
+  // إعدادات الطلب - لاحظ تنسيق Authorization المحدث
   const options = {
     hostname: "onesignal.com",
     path: "/api/v1/notifications",
@@ -32,18 +31,19 @@ module.exports = (req, res) => {
   };
 
   const request = https.request(options, (response) => {
-    let responseBody = "";
-    response.on("data", (chunk) => { responseBody += chunk; });
+    let body = "";
+    response.on("data", (chunk) => body += chunk);
     response.on("end", () => {
-      // إرجاع النتيجة للموقع
-      res.status(200).json({ success: true, status: response.statusCode });
+      // إرسال رد الموقع النهائي
+      res.status(response.statusCode).json({
+        success: response.statusCode === 200,
+        os_status: response.statusCode,
+        details: body
+      });
     });
   });
 
-  request.on("error", (e) => {
-    res.status(500).json({ error: e.message });
-  });
-
+  request.on("error", (e) => res.status(500).json({ error: e.message }));
   request.write(data);
   request.end();
 };
