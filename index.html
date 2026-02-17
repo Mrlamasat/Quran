@@ -60,7 +60,7 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 <button onclick="loginAdmin()" style="background:#2c3e50; color:white; width:95%; padding:10px; border:none; border-radius:5px;">دخول</button>
 </div>
 <div id="adminControls" style="display:none;">
-<p style="color:#27ae60; font-weight:bold;">مرحباً يا محمد</p>
+<p style="color:#27ae60; font-weight:bold;">مرحباً يا المسؤول</p>
 <button onclick="resetMonthData()" class="btn-reset">⚠️ تصفير سجل الشهر الجديد</button>
 <button onclick="logoutAdmin()" style="background:#95a5a6; color:white; border:none; padding:8px; border-radius:5px; margin-top:20px; width:95%;">خروج</button>
 </div>
@@ -101,9 +101,13 @@ function closeAlert(){ document.getElementById('myAlert').style.display='none'; 
 /* Anonymous Auth للزوار */
 auth.onAuthStateChanged(user=>{
     if(!user) auth.signInAnonymously();
-    const isAdmin = user && !user.isAnonymous && user.email==="your-admin-email@gmail.com";
+
+    const admins = ["Mohammeddalmohsen@gmail.com"];
+    const isAdmin = user && !user.isAnonymous && admins.includes(user.email);
+
     document.getElementById('loginForm').style.display = isAdmin?'none':'block';
     document.getElementById('adminControls').style.display = isAdmin?'block':'none';
+
     const header = document.getElementById('payoutHeader');
     header.innerHTML = `<th>الاسم</th><th>حالة الاستلام</th>${isAdmin?'<th>تحكم</th>':''}`;
     loadData();
@@ -116,7 +120,8 @@ function loadData(){
         const payments = data.payments ? (data.payments[monthKey] || {}) : {};
         const received = data.received_totals || {};
         const user = auth.currentUser;
-        const isAdmin = user && !user.isAnonymous && user.email==="your-admin-email@gmail.com";
+        const admins = ["Mohammeddalmohsen@gmail.com"];
+        const isAdmin = user && !user.isAnonymous && admins.includes(user.email);
 
         let h='';
         members.forEach((name,i)=>{
