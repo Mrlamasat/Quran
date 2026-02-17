@@ -10,7 +10,7 @@
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
-          appId: "ضع_هنا_APP_ID_الخاص_بك", 
+          appId: "870308712173", // تأكد من أنه الـ APP ID الصحيح
         });
       });
     </script>
@@ -20,7 +20,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; text-align: center; direction: rtl; margin: 0; padding: 10px; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f4f7f6; text-align: center; direction: rtl; margin: 0; padding: 10px; }
         .container { max-width: 500px; margin: 10px auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h1 { color: #1a73e8; cursor: pointer; margin-bottom: 5px; }
         .status-card { background: #e8f4fd; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; border-right: 5px solid #1a73e8; }
@@ -28,16 +28,15 @@
         th, td { padding: 10px 5px; border-bottom: 1px solid #eee; font-size: 0.85em; }
         .paid { color: #27ae60; font-weight: bold; }
         .not-paid { color: #e74c3c; font-weight: bold; }
-        .btn-verify { background: #27ae60; color: white; border: none; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-verify { background: #27ae60; color: white; border: none; padding: 4px 10px; border-radius: 5px; cursor: pointer; }
         #adminPanel { display: none; margin-top: 30px; border-top: 2px dashed #dc3545; padding: 15px; background: #fffdfd; border-radius: 10px; }
-        .admin-input { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; display: block; margin-left: auto; margin-right: auto; }
+        .admin-input { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
         .btn-reset { background: #c0392b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
-        .custom-alert { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
-        .alert-content { background-color: white; margin: 30% auto; padding: 25px; border-radius: 15px; width: 80%; max-width: 350px; }
-        .alert-btn { background: #1a73e8; color: white; border: none; padding: 10px 30px; border-radius: 8px; cursor: pointer; margin-top: 20px; font-weight: bold; width: 100%; }
-        .code-input { width: 60px; text-align: center; padding: 5px; border: 1px solid #ccc; border-radius: 5px; }
         .payout-container { background:#f9fffb; padding:15px; border-radius:10px; margin-top:30px; border: 1px solid #d1fae5; }
-        .toggle-btn { background: #3182ce; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; }
+        .toggle-btn { background: #3182ce; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8em; }
+        .custom-alert { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
+        .alert-content { background: white; margin: 30% auto; padding: 25px; border-radius: 15px; width: 80%; max-width: 350px; }
+        .alert-btn { background: #1a73e8; color: white; border: none; padding: 10px 30px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -76,14 +75,10 @@
 </div>
 
 <div id="myAlert" class="custom-alert">
-    <div class="alert-content">
-        <p id="alertMsg"></p>
-        <button onclick="closeAlert()" class="alert-btn">موافق</button>
-    </div>
+    <div class="alert-content"><p id="alertMsg"></p><button onclick="closeAlert()" class="alert-btn">موافق</button></div>
 </div>
 
 <script>
-// 1. Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4xFy5ylz9I",
     authDomain: "jamia-app-5bd27.firebaseapp.com",
@@ -104,25 +99,14 @@ document.getElementById('monthLabel').innerText = "سجل شهر: " + new Date()
 function showAlert(msg){ document.getElementById('alertMsg').innerText=msg; document.getElementById('myAlert').style.display='block'; }
 function closeAlert(){ document.getElementById('myAlert').style.display='none'; }
 
-// 2. Auth Listener (إصلاح مشكلة ظهور زر التصفير)
 auth.onAuthStateChanged(user => {
-    const adminEmail = "Mohammeddalmohsen@gmail.com";
-    
-    if (!user) {
-        auth.signInAnonymously();
-        return;
-    }
-
-    const isAdmin = !user.isAnonymous && user.email.toLowerCase() === adminEmail.toLowerCase();
-    
-    // التحكم المباشر في العناصر
+    if (!user) { auth.signInAnonymously(); return; }
+    const isAdmin = !user.isAnonymous && user.email.toLowerCase() === "mohammeddalmohsen@gmail.com";
     document.getElementById('loginForm').style.display = isAdmin ? 'none' : 'block';
     document.getElementById('adminControls').style.display = isAdmin ? 'block' : 'none';
-    
     loadData(isAdmin);
 });
 
-// 3. Load Data
 function loadData(isAdmin) {
     db.ref().on('value', snap => {
         const data = snap.val() || {};
@@ -133,11 +117,8 @@ function loadData(isAdmin) {
         members.forEach((name, i) => {
             const id = i + 1;
             const paid = payments[id] && payments[id].status;
-            h += `<tr>
-                <td><b>${name}</b></td>
-                <td class="${paid ? 'paid' : 'not-paid'}">${paid ? '✅' : '❌'}</td>
-                <td>${paid ? '✔️' : `<input type="number" id="in-${id}" class="code-input"> <button onclick="verify(${id},'${name}')" class="btn-verify">OK</button>`}</td>
-            </tr>`;
+            h += `<tr><td><b>${name}</b></td><td class="${paid?'paid':'not-paid'}">${paid?'✅':'❌'}</td>
+            <td>${paid?'✔️':`<input type="number" id="in-${id}" class="code-input"> <button onclick="verify(${id},'${name}')" class="btn-verify">OK</button>`}</td></tr>`;
         });
         document.getElementById('memberTable').innerHTML = h;
 
@@ -145,65 +126,59 @@ function loadData(isAdmin) {
         members.forEach((name, i) => {
             const id = i + 1;
             const rec = received[id] === true;
-            ph += `<tr>
-                <td>${name}</td>
-                <td class="${rec ? 'paid' : 'not-paid'}">${rec ? 'تم ✅' : 'لم يستلم'}</td>
-                ${isAdmin ? `<td><button onclick="toggleRec(${id},${rec})" class="toggle-btn">تبديل</button></td>` : ''}
-            </tr>`;
+            ph += `<tr><td>${name}</td><td class="${rec?'paid':'not-paid'}">${rec?'تم ✅':'لم يستلم'}</td>
+            ${isAdmin ? `<td><button onclick="toggleRec(${id},${rec})" class="toggle-btn">تبديل</button></td>` : ''}</tr>`;
         });
         document.getElementById('payoutTable').innerHTML = ph;
     });
 }
 
-// 4. Actions
 function verify(id, name) {
     const val = document.getElementById('in-' + id).value;
-    if (!val) return showAlert("❌ أدخل الكود أولاً");
     db.ref('secret_codes/' + id).once('value').then(snap => {
         if (String(val) === String(snap.val())) {
             db.ref(`payments/${monthKey}/${id}`).set({ status: true, date: new Date().toLocaleDateString() });
             showAlert(`✅ تم التأكيد لـ ${name}`);
             sendPushNotification(`✅ دفع جديد من: ${name}`);
-        } else {
-            showAlert("❌ الكود غير صحيح");
-        }
+        } else { showAlert("❌ الكود خطأ"); }
     });
 }
 
+// دالة التصفير الأكيدة
+function resetMonthData() {
+    if (confirm("هل تريد مسح جميع دفعات هذا الشهر؟")) {
+        db.ref('payments/' + monthKey).remove()
+            .then(() => {
+                showAlert("✅ تم تصفير سجل الشهر");
+                sendPushNotification("📅 تم تصفير سجل الشهر بالكامل");
+            })
+            .catch(err => showAlert("خطأ في الصلاحيات: " + err.message));
+    }
+}
+
+// دالة التبديل الأكيدة
+function toggleRec(id, s) {
+    db.ref('received_totals/' + id).set(!s)
+        .catch(err => alert("خطأ: " + err.message));
+}
+
 async function sendPushNotification(msg) {
-    try {
-        await fetch('/api/send-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: msg })
-        });
-    } catch (e) { console.error("Notification failed", e); }
+    fetch('/api/send-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg })
+    }).catch(e => console.error("Notification failed"));
 }
 
 function loginAdmin() {
-    const e = document.getElementById('email').value;
-    const p = document.getElementById('pass').value;
-    auth.signInWithEmailAndPassword(e, p)
-        .then(() => {
-            // لا حاجة لعمل شيء هنا، onAuthStateChanged سيتكفل بالباقي
-        })
+    auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('pass').value)
         .catch(err => showAlert("خطأ: " + err.message));
 }
-
 function logoutAdmin() { auth.signOut().then(() => location.reload()); }
-
 function toggleAdminView() { 
     const p = document.getElementById('adminPanel');
     p.style.display = (p.style.display === 'block') ? 'none' : 'block';
 }
-
-function resetMonthData() {
-    if (confirm("هل تريد تصفير بيانات الشهر الحالي؟")) {
-        db.ref(`payments/${monthKey}`).remove();
-        sendPushNotification("📅 تم تصفير سجل الشهر لجميع الأعضاء");
-    }
-}
-function toggleRec(id, s) { db.ref(`received_totals/${id}`).set(!s); }
 </script>
 </body>
 </html>
