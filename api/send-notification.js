@@ -1,34 +1,117 @@
-const fetch = require('node-fetch');
+const https = require("https");
 
-module.exports = async (req, res) => {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+module.exports = async function handler(req, res) {
+  // السماح فقط بـ POST
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
+
+  // CORS Protection
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  try {
+    // 🔐 التحقق من المفتاح السري
+    const clientSecret = req.headers["authorization"];
+    if (!clientSecret || clientSecret !== `Bearer ${process.env.API_SECRET}`) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { message } = req.body;
+    const {
+      message,
+      title,
+      image,
+      icon,
+      url,
+      player_ids,
+      buttons
+    } = req.body;
 
-    // المفاتيح محفورة داخل الكود لضمان العمل الفوري
-    const APP_ID = "564eb270-ccb3-428f-b9f8-f162d56321c4";
-    const REST_KEY = "Os_v2_app_kzhle4gmwnbi7opy6frnkyzbyrqitvovpu2ugku5pdtd33igz22kb3h6ycqmph2yyzw2uooxfi3k3uvccboabgo34a3pghyolftacda";
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
 
-    try {
-        const response = await fetch("https://onesignal.com/api/v1/notifications", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json; charset=utf-8",
-                "Authorization": "Basic " + REST_KEY
-            },
-            body: JSON.stringify({
-                app_id: APP_ID,
-                included_segments: ["All"],
-                contents: { "ar": message, "en": message },
-                headings: { "ar": "تنبيه Spaarkring", "en": "Spaarkring Alert" }
-            }),
+    const notification = {
+      app_id: process.env.ONESIGNAL_APP_ID,
+      contents: { en: message },
+      headings: { en: title || "إشعار جديد" },
+      included_segments: ["All"],
+    };
+
+    // إرسال لمستخدم محدد
+    if (player_ids && Array.isArray(player_ids)) {
+      delete notification.included_segments;
+      notification.include_player_ids = player_ids;
+    }
+
+    // صورة كبيرة
+    if (image) {
+      notification.big_picture = image;
+      notification.chrome_big_picture = image;
+    }
+
+    // أيقونة
+    if (icon) {
+      notification.small_icon = icon;
+      notification.large_icon = icon;
+    }
+
+    // رابط عند الضغط
+    if (url) {
+      notification.url = url;
+    }
+
+    // أزرار
+    if (buttons && Array.isArray(buttons)) {
+      notification.buttons = buttons;
+    }
+
+    const postData = JSON.stringify(notification);
+
+    const options = {
+      hostname: "onesignal.com",
+      port: 443,
+      path: "/api/v1/notifications",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(postData),
+        Authorization: `Basic ${process.env.ONESIGNAL_REST_KEY}`,
+      },
+    };
+
+    const request = https.request(options, (response) => {
+      let data = "";
+
+      response.on("data", (chunk) => {
+        data += chunk;
+      });
+
+      response.on("end", () => {
+        let parsed;
+        try {
+          parsed = JSON.parse(data);
+        } catch {
+          parsed = data;
+        }
+
+        return res.status(response.statusCode).json({
+          success: response.statusCode === 200,
+          onesignal_response: parsed,
         });
+      });
+    });
 
-        const data = await response.json();
-        return res.status(200).json({ success: true, data });
-    } catch (e) {
-        return res.status(500).json({ success: false, error: e.message });
-    }
+    request.on("error", (error) => {
+      console.error("OneSignal Error:", error);
+      return res.status(500).json({ error: "Notification Failed" });
+    });
+
+    request.write(postData);
+    request.end();
+  } catch (error) {
+    console.error("Server Error:", error);
+    return res.status(500).json({ error: "Server Error" });
+  }
 };
