@@ -11,8 +11,6 @@
       OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
           appId: "ضع_هنا_APP_ID_الخاص_بك", 
-          safari_web_id: "web.onesignal.auto.5bd27...", // اختياري لمتصفح سفاري
-          notifyButton: { enable: true },
         });
       });
     </script>
@@ -103,30 +101,34 @@ const members = ["محسن","سليم","أبو محمد","مشتاق","رضوا�
 const monthKey = new Date().getFullYear() + "-" + (new Date().getMonth()+1).toString().padStart(2,'0');
 document.getElementById('monthLabel').innerText = "سجل شهر: " + new Date().toLocaleDateString('ar-EG',{month:'long', year:'numeric'});
 
-// 2. Alert Functions
 function showAlert(msg){ document.getElementById('alertMsg').innerText=msg; document.getElementById('myAlert').style.display='block'; }
 function closeAlert(){ document.getElementById('myAlert').style.display='none'; }
 
-// 3. Auth Listener (لإظهار لوحة التحكم)
+// 2. Auth Listener (إصلاح مشكلة ظهور زر التصفير)
 auth.onAuthStateChanged(user => {
+    const adminEmail = "Mohammeddalmohsen@gmail.com";
+    
     if (!user) {
         auth.signInAnonymously();
         return;
     }
-    const isAdmin = !user.isAnonymous && user.email === "Mohammeddalmohsen@gmail.com";
+
+    const isAdmin = !user.isAnonymous && user.email.toLowerCase() === adminEmail.toLowerCase();
+    
+    // التحكم المباشر في العناصر
     document.getElementById('loginForm').style.display = isAdmin ? 'none' : 'block';
     document.getElementById('adminControls').style.display = isAdmin ? 'block' : 'none';
+    
     loadData(isAdmin);
 });
 
-// 4. Load Data
+// 3. Load Data
 function loadData(isAdmin) {
     db.ref().on('value', snap => {
         const data = snap.val() || {};
         const payments = (data.payments && data.payments[monthKey]) ? data.payments[monthKey] : {};
         const received = data.received_totals || {};
 
-        // تحديث جدول الأعضاء
         let h = '';
         members.forEach((name, i) => {
             const id = i + 1;
@@ -139,7 +141,6 @@ function loadData(isAdmin) {
         });
         document.getElementById('memberTable').innerHTML = h;
 
-        // تحديث جدول الاستلام
         let ph = '';
         members.forEach((name, i) => {
             const id = i + 1;
@@ -154,7 +155,7 @@ function loadData(isAdmin) {
     });
 }
 
-// 5. Logic Functions
+// 4. Actions
 function verify(id, name) {
     const val = document.getElementById('in-' + id).value;
     if (!val) return showAlert("❌ أدخل الكود أولاً");
@@ -162,7 +163,7 @@ function verify(id, name) {
         if (String(val) === String(snap.val())) {
             db.ref(`payments/${monthKey}/${id}`).set({ status: true, date: new Date().toLocaleDateString() });
             showAlert(`✅ تم التأكيد لـ ${name}`);
-            sendPushNotification(`✅ دفع جديد: ${name}`);
+            sendPushNotification(`✅ دفع جديد من: ${name}`);
         } else {
             showAlert("❌ الكود غير صحيح");
         }
@@ -183,19 +184,23 @@ function loginAdmin() {
     const e = document.getElementById('email').value;
     const p = document.getElementById('pass').value;
     auth.signInWithEmailAndPassword(e, p)
-        .then(() => showAlert("مرحباً بك"))
+        .then(() => {
+            // لا حاجة لعمل شيء هنا، onAuthStateChanged سيتكفل بالباقي
+        })
         .catch(err => showAlert("خطأ: " + err.message));
 }
 
 function logoutAdmin() { auth.signOut().then(() => location.reload()); }
+
 function toggleAdminView() { 
     const p = document.getElementById('adminPanel');
     p.style.display = (p.style.display === 'block') ? 'none' : 'block';
 }
+
 function resetMonthData() {
     if (confirm("هل تريد تصفير بيانات الشهر الحالي؟")) {
         db.ref(`payments/${monthKey}`).remove();
-        sendPushNotification("📅 تم تصفير سجل الشهر");
+        sendPushNotification("📅 تم تصفير سجل الشهر لجميع الأعضاء");
     }
 }
 function toggleRec(id, s) { db.ref(`received_totals/${id}`).set(!s); }
