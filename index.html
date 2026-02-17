@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spaarkring - Dashboard</title>
+    <title>Spaarkring - نظام الإدارة والتنبيهات</title>
     
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
@@ -11,7 +11,6 @@
       OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
           appId: "564eb270-ccb3-428f-b9f8-f162d56321c4",
-          allowLocalhostAsSecureOrigin: true // للسماح بالتجربة المحلية
         });
       });
     </script>
@@ -30,9 +29,11 @@
         .paid { color: #27ae60; font-weight: bold; }
         .not-paid { color: #e74c3c; font-weight: bold; }
         .btn-verify { background: #27ae60; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+        
         #adminPanel { display: none; margin-top: 30px; border-top: 2px dashed #dc3545; padding: 15px; background: #fffdfd; border-radius: 10px; }
         .admin-input { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
         .btn-reset { background: #c0392b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        
         .payout-container { background:#f9fffb; padding:15px; border-radius:10px; margin-top:30px; border: 1px solid #d1fae5; }
         .toggle-btn { background: #3182ce; color: white; border: none; padding: 3px 6px; border-radius: 3px; font-size: 0.7em; cursor: pointer; }
     </style>
@@ -64,6 +65,7 @@
             <input type="password" id="pass" placeholder="كلمة المرور" class="admin-input">
             <button onclick="loginAdmin()" style="background:#2c3e50; color:white; width:95%; padding:10px; border:none; border-radius:5px;">دخول</button>
         </div>
+        
         <div id="adminControls" style="display:none;">
             <p style="color:#27ae60; font-weight:bold;">مرحباً يا محمد</p>
             <button onclick="resetMonthData()" class="btn-reset">⚠️ تصفير سجل الشهر الجديد</button>
@@ -73,6 +75,7 @@
 </div>
 
 <script>
+// إعدادات Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4xFy5ylz9I",
     authDomain: "jamia-app-5bd27.firebaseapp.com",
@@ -91,10 +94,21 @@ const monthKey = new Date().getFullYear() + "-" + (new Date().getMonth() + 1).to
 
 document.getElementById('monthLabel').innerText = "سجل شهر: " + new Date().toLocaleDateString('ar-EG', {month:'long', year:'numeric'});
 
-// وظيفة إرسال التنبيه - تذكر إضافة الـ REST API KEY في OneSignal
-function sendPush(msg) {
-    // هذه الدالة ستعمل إذا كنت قد ربطت الـ REST API Key في إعدادات OneSignal
-    console.log("إرسال تنبيه: " + msg);
+// دالة إرسال التنبيه التلقائي
+function sendPushNotification(msg) {
+    fetch('https://onesignal.com/api/v1/notifications', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Basic YOUR_REST_API_KEY' // <--- ضع مفتاحك هنا يا محمد ليعمل التنبيه
+        },
+        body: JSON.stringify({
+            app_id: "564eb270-ccb3-428f-b9f8-f162d56321c4",
+            included_segments: ["Total Subscriptions"],
+            contents: { "ar": msg },
+            headings: { "ar": "تنبيه Spaarkring" }
+        })
+    }).catch(e => console.error("فشل إرسال التنبيه:", e));
 }
 
 auth.onAuthStateChanged(user => {
@@ -119,7 +133,7 @@ function loadData() {
             const id = i + 1;
             const paid = payments[id] && payments[id].status;
             h += `<tr><td><b>${name}</b></td><td class="${paid?'paid':'not-paid'}">${paid?'✅':'❌'}</td>
-            <td>${paid?'✔️':`<input type="password" id="in-${id}" style="width:30px;"> <button onclick="verify(${id}, '${name}')" class="btn-verify">OK</button>`}</td></tr>`;
+            <td>${paid?'✔️':`<input type="password" id="in-${id}" style="width:30px;"> <button onclick="verify(${id},'${name}')" class="btn-verify">OK</button>`}</td></tr>`;
         });
         document.getElementById('memberTable').innerHTML = h;
 
@@ -139,20 +153,21 @@ function verify(id, name) {
     db.ref('secret_codes/'+id).once('value', s => {
         if(String(code) === String(s.val())) {
             db.ref(`payments/${monthKey}/${id}`).set({status: true, date: new Date().toLocaleDateString('ar-EG')})
-              .then(() => sendPush("✅ تم تأكيد دفع: " + name));
+            .then(() => sendPushNotification(`✅ تم تأكيد استلام مبلغ من: ${name}`));
         } else { alert("الكود خطأ!"); }
     });
 }
 
 function resetMonthData() {
-    if(confirm("تصفير الشهر؟")) {
-        db.ref(`payments/${monthKey}`).remove().then(() => sendPush("📅 تم تصفير الشهر، ابدأوا بالدفع"));
+    if(confirm("⚠️ تصفير سجل دفعات الشهر؟")) {
+        db.ref(`payments/${monthKey}`).remove()
+        .then(() => sendPushNotification("📅 تم تصفير السجل.. يرجى البدء بدفع قسط الشهر الجديد"));
     }
 }
 
 function toggleRec(id, s) { db.ref(`received_totals/${id}`).set(!s); }
 function toggleAdminView() { const p = document.getElementById('adminPanel'); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; }
-function loginAdmin() { auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('pass').value); }
+function loginAdmin() { auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('pass').value).catch(e => alert(e.message)); }
 function logoutAdmin() { auth.signOut().then(() => location.reload()); }
 </script>
 </body>
