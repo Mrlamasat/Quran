@@ -10,7 +10,9 @@
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
-          appId: "870308712173", // تأكد من أنه الـ APP ID الصحيح
+          appId: "870308712173", // تأكد أن هذا هو الـ App ID من لوحة تحكم OneSignal
+          notifyButton: { enable: true }, // جرس صغير للاشتراك
+          allowLocalhostAsSecureOrigin: true,
         });
       });
     </script>
@@ -28,15 +30,29 @@
         th, td { padding: 10px 5px; border-bottom: 1px solid #eee; font-size: 0.85em; }
         .paid { color: #27ae60; font-weight: bold; }
         .not-paid { color: #e74c3c; font-weight: bold; }
-        .btn-verify { background: #27ae60; color: white; border: none; padding: 4px 10px; border-radius: 5px; cursor: pointer; }
+        
+        /* تعديل خانة الكود لتكون صغيرة وللأرقام فقط */
+        .code-input { 
+            width: 50px; 
+            padding: 8px; 
+            text-align: center; 
+            border: 1px solid #ccc; 
+            border-radius: 5px; 
+            font-weight: bold;
+            -moz-appearance: textfield;
+        }
+        .code-input::-webkit-outer-spin-button, .code-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+        .btn-verify { background: #27ae60; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         #adminPanel { display: none; margin-top: 30px; border-top: 2px dashed #dc3545; padding: 15px; background: #fffdfd; border-radius: 10px; }
-        .admin-input { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
+        .admin-input { width: 90%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; }
         .btn-reset { background: #c0392b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
         .payout-container { background:#f9fffb; padding:15px; border-radius:10px; margin-top:30px; border: 1px solid #d1fae5; }
         .toggle-btn { background: #3182ce; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8em; }
+        
         .custom-alert { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
         .alert-content { background: white; margin: 30% auto; padding: 25px; border-radius: 15px; width: 80%; max-width: 350px; }
-        .alert-btn { background: #1a73e8; color: white; border: none; padding: 10px 30px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 15px; }
+        .alert-btn { background: #1a73e8; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -54,7 +70,7 @@
     <div class="payout-container">
         <h3>💰 سجل استلام المبالغ (4000€)</h3>
         <table>
-            <thead><tr id="payoutHeader"><th>الاسم</th><th>حالة الاستلام</th></tr></thead>
+            <thead><tr><th>الاسم</th><th>الحالة</th><th>إجراء</th></tr></thead>
             <tbody id="payoutTable"></tbody>
         </table>
     </div>
@@ -62,14 +78,14 @@
     <div id="adminPanel">
         <div id="loginForm">
             <h4 style="color:#c0392b;">دخول المسؤول</h4>
-            <input type="email" id="email" placeholder="الإيميل" class="admin-input">
-            <input type="password" id="pass" placeholder="كلمة المرور" class="admin-input">
-            <button onclick="loginAdmin()" style="background:#2c3e50; color:white; width:100%; padding:10px; border:none; border-radius:5px; cursor:pointer;">دخول</button>
+            <input type="email" id="email" placeholder="الإيميل" class="admin-input" autocomplete="off">
+            <input type="password" id="pass" placeholder="كلمة المرور" class="admin-input" autocomplete="new-password">
+            <button onclick="loginAdmin()" style="background:#2c3e50; color:white; width:100%; padding:12px; border:none; border-radius:8px; cursor:pointer; margin-top:10px;">دخول</button>
         </div>
         <div id="adminControls" style="display:none;">
-            <p style="color:#27ae60; font-weight:bold;">مرحباً يا محمد</p>
+            <p style="color:#27ae60; font-weight:bold;">أهلاً يا محمد</p>
             <button onclick="resetMonthData()" class="btn-reset">⚠️ تصفير سجل الشهر الجديد</button>
-            <button onclick="logoutAdmin()" style="background:#95a5a6; color:white; border:none; padding:8px; border-radius:5px; margin-top:20px; width:100%; cursor:pointer;">خروج</button>
+            <button onclick="logoutAdmin()" style="background:#95a5a6; color:white; border:none; padding:10px; border-radius:8px; margin-top:20px; width:100%; cursor:pointer;">خروج</button>
         </div>
     </div>
 </div>
@@ -79,6 +95,7 @@
 </div>
 
 <script>
+// إعدادات Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4xFy5ylz9I",
     authDomain: "jamia-app-5bd27.firebaseapp.com",
@@ -99,6 +116,7 @@ document.getElementById('monthLabel').innerText = "سجل شهر: " + new Date()
 function showAlert(msg){ document.getElementById('alertMsg').innerText=msg; document.getElementById('myAlert').style.display='block'; }
 function closeAlert(){ document.getElementById('myAlert').style.display='none'; }
 
+// مراقبة الدخول
 auth.onAuthStateChanged(user => {
     if (!user) { auth.signInAnonymously(); return; }
     const isAdmin = !user.isAnonymous && user.email.toLowerCase() === "mohammeddalmohsen@gmail.com";
@@ -117,8 +135,11 @@ function loadData(isAdmin) {
         members.forEach((name, i) => {
             const id = i + 1;
             const paid = payments[id] && payments[id].status;
-            h += `<tr><td><b>${name}</b></td><td class="${paid?'paid':'not-paid'}">${paid?'✅':'❌'}</td>
-            <td>${paid?'✔️':`<input type="number" id="in-${id}" class="code-input"> <button onclick="verify(${id},'${name}')" class="btn-verify">OK</button>`}</td></tr>`;
+            h += `<tr>
+                <td><b>${name}</b></td>
+                <td class="${paid?'paid':'not-paid'}">${paid?'✅':'❌'}</td>
+                <td>${paid?'✔️':`<input type="number" id="in-${id}" class="code-input" inputmode="numeric" autocomplete="off"> <button onclick="verify(${id},'${name}')" class="btn-verify">OK</button>`}</td>
+            </tr>`;
         });
         document.getElementById('memberTable').innerHTML = h;
 
@@ -126,8 +147,11 @@ function loadData(isAdmin) {
         members.forEach((name, i) => {
             const id = i + 1;
             const rec = received[id] === true;
-            ph += `<tr><td>${name}</td><td class="${rec?'paid':'not-paid'}">${rec?'تم ✅':'لم يستلم'}</td>
-            ${isAdmin ? `<td><button onclick="toggleRec(${id},${rec})" class="toggle-btn">تبديل</button></td>` : ''}</tr>`;
+            ph += `<tr>
+                <td>${name}</td>
+                <td class="${rec?'paid':'not-paid'}">${rec?'تم ✅':'لم يستلم'}</td>
+                <td>${isAdmin ? `<button onclick="toggleRec(${id},${rec})" class="toggle-btn">تبديل</button>` : '-'}</td>
+            </tr>`;
         });
         document.getElementById('payoutTable').innerHTML = ph;
     });
@@ -135,44 +159,39 @@ function loadData(isAdmin) {
 
 function verify(id, name) {
     const val = document.getElementById('in-' + id).value;
+    if(!val) return showAlert("يرجى إدخال الكود");
     db.ref('secret_codes/' + id).once('value').then(snap => {
         if (String(val) === String(snap.val())) {
             db.ref(`payments/${monthKey}/${id}`).set({ status: true, date: new Date().toLocaleDateString() });
             showAlert(`✅ تم التأكيد لـ ${name}`);
-            sendPushNotification(`✅ دفع جديد من: ${name}`);
-        } else { showAlert("❌ الكود خطأ"); }
+            sendPushNotification(`✅ تم دفع قسط: ${name}`);
+        } else { showAlert("❌ الكود غير صحيح"); }
     });
 }
 
-// دالة التصفير الأكيدة
 function resetMonthData() {
-    if (confirm("هل تريد مسح جميع دفعات هذا الشهر؟")) {
-        db.ref('payments/' + monthKey).remove()
-            .then(() => {
-                showAlert("✅ تم تصفير سجل الشهر");
-                sendPushNotification("📅 تم تصفير سجل الشهر بالكامل");
-            })
-            .catch(err => showAlert("خطأ في الصلاحيات: " + err.message));
+    if (confirm("هل أنت متأكد من تصفير سجل هذا الشهر؟")) {
+        db.ref('payments/' + monthKey).remove().then(() => {
+            showAlert("✅ تم التصفير بنجاح");
+            sendPushNotification("📅 تم تصفير سجل الشهر للجميع");
+        });
     }
 }
 
-// دالة التبديل الأكيدة
-function toggleRec(id, s) {
-    db.ref('received_totals/' + id).set(!s)
-        .catch(err => alert("خطأ: " + err.message));
-}
+function toggleRec(id, s) { db.ref('received_totals/' + id).set(!s); }
 
 async function sendPushNotification(msg) {
     fetch('/api/send-notification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: msg })
-    }).catch(e => console.error("Notification failed"));
+    }).catch(e => console.error("Notification Error"));
 }
 
 function loginAdmin() {
-    auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('pass').value)
-        .catch(err => showAlert("خطأ: " + err.message));
+    const e = document.getElementById('email').value;
+    const p = document.getElementById('pass').value;
+    auth.signInWithEmailAndPassword(e, p).catch(err => showAlert("خطأ: " + err.message));
 }
 function logoutAdmin() { auth.signOut().then(() => location.reload()); }
 function toggleAdminView() { 
