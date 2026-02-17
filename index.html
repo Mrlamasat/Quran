@@ -19,10 +19,11 @@ table { width:100%; border-collapse:collapse; margin-top:10px; table-layout: fix
 th, td { padding:10px 2px; border-bottom:1px solid #eee; text-align:center; font-size:0.9em; }
 .paid { color:#28a745; font-weight:bold; }
 .not-paid { color:#dc3545; font-weight:bold; }
-input { width:50px; padding:5px; text-align:center; border:1px solid #ddd; border-radius:4px; }
+input { width:40px; padding:5px; text-align:center; border:1px solid #ddd; border-radius:4px; }
 button { background:#34a853; color:white; border:none; padding:6px 10px; border-radius:5px; cursor:pointer; }
 #adminSection { display:none; margin-top:20px; padding:15px; border:2px solid #dc3545; border-radius:15px; background:#fff5f5; }
 .admin-input { width:90%; margin-bottom:10px; padding:8px; border:1px solid #ccc; border-radius:5px; }
+.edit-btn { background:#1a73e8; font-size:0.75em; padding:3px 6px; margin-right:5px; }
 </style>
 </head>
 <body>
@@ -42,38 +43,37 @@ button { background:#34a853; color:white; border:none; padding:6px 10px; border-
     </table>
 
     <div class="payout-info">
-        💰 يستلم كل عضو مبلغ: 4000 يورو
+        💰 سجل استلام الـ 4000 يورو
         <table style="margin-top:10px;">
-            <thead><tr><th>الاسم</th><th>حالة الاستلام</th></tr></thead>
+            <thead><tr><th>الاسم</th><th>الحالة</th></tr></thead>
             <tbody id="payoutTableBody"></tbody>
         </table>
     </div>
 
     <div id="adminSection">
-        <h3 style="color:#dc3545;">تسجيل المسؤول</h3>
+        <h3 style="color:#dc3545;">لوحة تحكم المسؤول (محمد)</h3>
         <input type="email" id="adminEmail" placeholder="البريد الإلكتروني" class="admin-input"><br>
         <input type="password" id="adminPass" placeholder="كلمة المرور" class="admin-input"><br>
         <button onclick="handleLogin()" style="background:#dc3545; width:90%;">دخول المسؤول</button><br><br>
-        <button onclick="resetMonth()" style="background:#666; width:90%;">تصفير سجل الشهر</button><br><br>
+        <button onclick="resetMonth()" style="background:#666; width:90%;">⚠️ تصفير سجل الشهر</button><br><br>
         <button onclick="logout()" style="background:#444; width:90%;">خروج</button>
     </div>
 </div>
 
 <script>
+// المفتاح الصحيح الذي يعمل مع الرابط الجديد
 const firebaseConfig = {
-    apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4qU4v170M",
+    apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4xFy5ylz9I", 
     authDomain: "jamia-app-5bd27.firebaseapp.com",
     databaseURL: "https://jamia-app-5bd27-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "jamia-app-5bd27",
     storageBucket: "jamia-app-5bd27.appspot.com",
     messagingSenderId: "870308712173",
-    appId: "1:870308712173:web:be101df99fef2085b344a2"
+    appId: "1:870308712173:web:be101df99fef412f7886e4"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
-
-const adminUID = "k7l8SxQlgnVjrfDWGnXGprwdSYy1"; // UID المسؤول
 
 const members = [
     { id:1, name:"محسن" }, { id:2, name:"سليم" }, { id:3, name:"أبو محمد" },
@@ -85,11 +85,9 @@ const members = [
 const monthKey = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
 document.getElementById("monthTitle").innerText = "سجل شهر: " + new Date().toLocaleDateString('ar-EG',{month:'long', year:'numeric'});
 
-// الدخول المجهول لعرض الجدول للجميع
 auth.onAuthStateChanged(user => {
-    if(!user){
-        auth.signInAnonymously();
-    }
+    if(!user) auth.signInAnonymously();
+    if(user && !user.isAnonymous) document.getElementById('adminSection').style.display='block';
     renderData();
 });
 
@@ -109,7 +107,7 @@ function renderTables(payments, received) {
         const isPaid = p.status === true;
         html += `<tr>
             <td><strong>${m.name}</strong></td>
-            <td class="${isPaid?'paid':'not-paid'}">${isPaid?'✅ مدفوع':'❌ غير مدفوع'}</td>
+            <td class="${isPaid?'paid':'not-paid'}">${isPaid?'✅':'❌'}</td>
             <td>${isPaid?p.date:'-'}</td>
             <td>${isPaid?'✔️':`<input type="password" id="c-${m.id}" placeholder="***"><button onclick="verify(${m.id})">OK</button>`}</td>
         </tr>`;
@@ -117,22 +115,31 @@ function renderTables(payments, received) {
     document.getElementById('tableBody').innerHTML = html;
 
     let rHtml = '';
+    const isAdmin = auth.currentUser && !auth.currentUser.isAnonymous;
     members.forEach(m=>{
         const hasRec = received[m.id] === true;
-        rHtml += `<tr><td>${m.name}</td><td class="${hasRec?'paid':'not-paid'}">${hasRec?'تم الاستلام ✅':'لم يستلم'}</td></tr>`;
+        rHtml += `<tr>
+            <td>${m.name}</td>
+            <td class="${hasRec?'paid':'not-paid'}">
+                ${hasRec?'استلم ✅':'لم يستلم'}
+                ${isAdmin ? `<button class="edit-btn" onclick="toggleRec(${m.id}, ${hasRec})">تبديل</button>` : ''}
+            </td>
+        </tr>`;
     });
     document.getElementById('payoutTableBody').innerHTML = rHtml;
 }
 
 function verify(id){
     const code = document.getElementById('c-'+id).value.trim();
-    if(!code){ alert("❌ يرجى إدخال الكود"); return; }
     db.ref(`secret_codes/${id}`).once('value').then(snap=>{
         if(String(code)===String(snap.val())){
-            db.ref(`payments/${monthKey}/${id}`).set({status:true,date:new Date().toLocaleDateString('ar-EG')})
-            .then(()=> alert("✅ تم تأكيد الدفع"));
-        } else { alert("❌ الكود غير صحيح!"); document.getElementById('c-'+id).value=''; }
+            db.ref(`payments/${monthKey}/${id}`).set({status:true,date:new Date().toLocaleDateString('ar-EG')});
+        } else { alert("❌ الكود خطأ"); }
     });
+}
+
+function toggleRec(id, currentStatus) {
+    db.ref(`received_totals/${id}`).set(!currentStatus);
 }
 
 function showAdminLogin(){ document.getElementById('adminSection').style.display='block'; window.scrollTo(0, document.body.scrollHeight); }
@@ -140,19 +147,16 @@ function showAdminLogin(){ document.getElementById('adminSection').style.display
 function handleLogin(){
     const email=document.getElementById('adminEmail').value;
     const pass=document.getElementById('adminPass').value;
-    auth.signInWithEmailAndPassword(email, pass)
-        .then(()=> alert("✅ تم تسجيل الدخول كمسؤول"))
-        .catch(err=> alert("❌ "+err.message));
+    auth.signInWithEmailAndPassword(email, pass).catch(err=> alert("❌ "+err.message));
 }
 
 function logout(){ auth.signOut().then(()=> location.reload()); }
 
 function resetMonth(){
-    if(confirm("هل تريد تصفير سجل الدفعات لهذا الشهر؟")){
-        db.ref(`payments/${monthKey}`).remove().then(()=> alert("✅ تم تصفير سجل الشهر."));
+    if(confirm("تصفير سجل الدفعات؟")){
+        db.ref(`payments/${monthKey}`).remove();
     }
 }
 </script>
-
 </body>
 </html>
