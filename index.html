@@ -4,14 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spaarkring - Secure</title>
+    
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "564eb270-ccb3-428f-b9f8-f162d56321c4",
+        });
+      });
+    </script>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #f0f4f8; padding: 10px; text-align: center; }
         .container { max-width: 100%; margin: auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-top: 8px solid #1a73e8; }
         h1 { color: #1a73e8; text-transform: uppercase; margin-bottom: 15px; font-size: 2.2em; }
         
-        /* إطار التنبيه المحدث */
         .payment-notice { 
             background-color: #e8f0fe; 
             border: 1px solid #1a73e8; 
@@ -83,9 +94,10 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // القائمة المحدثة بالأسماء الصحيحة والترتيب الجديد
     const members = [
         { id: 1, name: "محسن" }, { id: 2, name: "سليم" }, { id: 3, name: "أبو محمد" },
-        { id: 4, name: "مشتاق" }, { id: 5, name: "رضوان" }, { id: 6, name: "حمزه" },
+        { id: 4, name: "مشتاق" }, { id: 5, name: "رضوان" }, { id: 6, name: "عبدالرحمن" },
         { id: 7, name: "علي" }, { id: 8, name: "أبو هتان" }, { id: 9, name: "أبو خالد" },
         { id: 10, name: "عبدالرحمن الصبيح" }
     ];
@@ -100,13 +112,30 @@
         document.getElementById('overlay').style.display = 'none';
     }
 
+    // فحص التاريخ يوم 22 للمتأخرين
+    function checkLatePayments(paidStatus) {
+        const today = new Date();
+        const currentDay = today.getDate();
+        if (currentDay >= 22) {
+            let isAnyLate = false;
+            members.forEach(m => {
+                if (!paidStatus[m.id] || paidStatus[m.id].status !== true) isAnyLate = true;
+            });
+            if (isAnyLate) {
+                setTimeout(() => {
+                    showAlert("⚠️ تذكير: نحن الآن في يوم " + currentDay + " وهناك أعضاء لم يسددوا القسط بعد.");
+                }, 3000);
+            }
+        }
+    }
+
     function renderTable(paidStatus) {
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
         members.forEach(member => {
-            const tr = document.createElement('tr');
             const isPaid = paidStatus[member.id]?.status === true;
             const payDate = isPaid ? paidStatus[member.id].date : '-';
+            const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${member.name}</strong></td>
                 <td><span class="${isPaid ? 'paid' : 'not-paid'}">${isPaid ? '✅' : '❌'}</span></td>
@@ -119,6 +148,7 @@
             `;
             tableBody.appendChild(tr);
         });
+        checkLatePayments(paidStatus);
     }
 
     db.ref('payments').on('value', snapshot => {
@@ -134,7 +164,7 @@
             const secretCode = snapshot.val();
             if (secretCode !== null && String(inputCode) === String(secretCode)) {
                 const now = new Date();
-                const dateStr = now.toLocaleDateString('en-GB'); // تنسيق يوم/شهر/سنة
+                const dateStr = now.toLocaleDateString('en-GB');
                 db.ref('payments/' + memberId).set({ status: true, date: dateStr });
                 showAlert('✅ تم التحقق بنجاح!');
             } else {
