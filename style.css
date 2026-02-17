@@ -1,0 +1,17 @@
+body { font-family:'Segoe UI', Tahoma, sans-serif; background:#f4f7f6; text-align:center; direction:rtl; margin:0; padding:10px; }
+.container { max-width:500px; margin:10px auto; background:white; padding:20px; border-radius:15px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
+h1 { color:#1a73e8; cursor:pointer; margin-bottom:5px; }
+.status-card { background:#e8f4fd; padding:15px; border-radius:10px; margin-bottom:20px; font-weight:bold; border-right:5px solid #1a73e8; }
+table { width:100%; border-collapse:collapse; margin-top:15px; }
+th, td { padding:10px 5px; border-bottom:1px solid #eee; font-size:0.85em; }
+.paid { color:#27ae60; font-weight:bold; }
+.not-paid { color:#e74c3c; font-weight:bold; }
+.code-input { width:50px; padding:8px; text-align:center; border:1px solid #ccc; border-radius:5px; font-weight:bold; }
+.btn-verify { background:#27ae60; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer; font-weight:bold; }
+.payout-container { background:#f9fffb; padding:15px; border-radius:10px; margin-top:30px; border:1px solid #d1fae5; }
+.custom-alert { display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); }
+.alert-content { background:white; margin:30% auto; padding:25px; border-radius:15px; width:80%; max-width:350px; }
+.alert-btn { background:#1a73e8; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; width:100%; margin-top:15px; font-weight:bold; }
+#adminPanel { display:none; margin-top:30px; border-top:2px dashed #dc3545; padding:15px; background:#fffdfd; border-radius:10px; }
+.admin-input { width:90%; padding:12px; margin:5px 0; border:1px solid #ddd; border-radius:8px; }
+.btn-reset { background:#c0392b; color:white; border:none; padding:12px; width:100%; border-radius:8px; font-weight:bold; cursor:pointer; margin-top:15px; }
