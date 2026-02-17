@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Samenstorten - نظام الجمعية</title>
+    <title>Samenstorten - Secure</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
+        /* التنسيق الجمالي للموقع */
         body { font-family: 'Segoe UI', sans-serif; background-color: #f0f4f8; padding: 20px; text-align: center; }
         .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 8px solid #1a73e8; }
-        h1 { color: #1a73e8; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }
-        .info-box { background: #fdfdfd; padding: 10px; border: 1px solid #eee; border-radius: 10px; margin-bottom: 25px; color: #555; }
-        table { width: 100%; border-collapse: collapse; }
+        h1 { color: #1a73e8; text-transform: uppercase; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { padding: 15px; border-bottom: 1px solid #eee; text-align: center; }
-        th { background: #1a73e8; color: white; }
         .paid { color: #28a745; font-weight: bold; background: #e6ffed; padding: 5px 12px; border-radius: 15px; }
         .not-paid { color: #dc3545; font-weight: bold; background: #ffeef0; padding: 5px 12px; border-radius: 15px; }
-        input { width: 70px; padding: 6px; border: 1px solid #ddd; border-radius: 5px; text-align: center; }
+        input { width: 80px; padding: 6px; border: 1px solid #ddd; border-radius: 5px; text-align: center; }
         button { background: #34a853; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
@@ -24,8 +23,7 @@
 
 <div class="container">
     <h1>Samenstorten</h1>
-    <div class="info-box">القسط: 400 يورو | الموعد: 22 من كل شهر</div>
-
+    <p>نظام الجمعية - إدارة محمد المحسن</p>
     <table>
         <thead>
             <tr>
@@ -39,6 +37,7 @@
 </div>
 
 <script>
+    // إعدادات Firebase الخاصة بك
     const firebaseConfig = {
         apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4qU4v170M",
         authDomain: "jamia-app-5bd27.firebaseapp.com",
@@ -53,18 +52,13 @@
     const db = firebase.database();
 
     const members = [
-        { id: 1, name: "محسن", code: "1010" },
-        { id: 2, name: "سليم", code: "2020" },
-        { id: 3, name: "أبو محمد", code: "3030" },
-        { id: 4, name: "مشتاق", code: "4040" },
-        { id: 5, name: "رضوان", code: "5050" },
-        { id: 6, name: "حمزه", code: "6060" },
-        { id: 7, name: "علي", code: "7070" },
-        { id: 8, name: "أبو هتان", code: "8080" },
-        { id: 9, name: "أبو خالد", code: "9090" },
-        { id: 10, name: "عبدالرحمن الصبيح", code: "0000" }
+        { id: 1, name: "محسن" }, { id: 2, name: "سليم" }, { id: 3, name: "أبو محمد" },
+        { id: 4, name: "مشتاق" }, { id: 5, name: "رضوان" }, { id: 6, name: "حمزه" },
+        { id: 7, name: "علي" }, { id: 8, name: "أبو هتان" }, { id: 9, name: "أبو خالد" },
+        { id: 10, name: "عبدالرحمن الصبيح" }
     ];
 
+    // جلب حالة الدفع
     db.ref('payments').on('value', (snapshot) => {
         const paidStatus = snapshot.val() || {};
         const tableBody = document.getElementById('tableBody');
@@ -79,7 +73,7 @@
                     <td>
                         ${isPaid ? '✔️ مكتمل' : `
                             <input type="text" id="code-${member.id}" placeholder="الكود">
-                            <button onclick="confirmPay(${member.id}, '${member.code}')">تأكيد</button>
+                            <button onclick="checkSecretCode(${member.id})">تأكيد</button>
                         `}
                     </td>
                 </tr>
@@ -87,14 +81,21 @@
         });
     });
 
-    function confirmPay(id, correctCode) {
-        const inputCode = document.getElementById('code-' + id).value;
-        if (inputCode === correctCode) {
-            db.ref('payments/' + id).set(true);
-            alert("تم تأكيد دفعك بنجاح في Samenstorten!");
-        } else {
-            alert("الكود غير صحيح!");
-        }
+    // دالة التحقق من الكود السري في قاعدة البيانات
+    function checkSecretCode(memberId) {
+        const inputCode = document.getElementById('code-' + memberId).value;
+        
+        // جلب الكود السري الخاص بهذا العضو من Firebase
+        db.ref('secret_codes/' + memberId).once('value').then((snapshot) => {
+            const secretCode = snapshot.val();
+            
+            if (inputCode === secretCode) {
+                db.ref('payments/' + memberId).set(true);
+                alert("تم التحقق بنجاح!");
+            } else {
+                alert("الكود غير صحيح!");
+            }
+        });
     }
 </script>
 </body>
