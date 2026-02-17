@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spaarkring - Dashboard</title>
 
+<!-- Firebase v8 -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -97,23 +98,25 @@ document.getElementById('monthLabel').innerText = "سجل شهر: "+new Date().t
 function showAlert(msg){ document.getElementById('alertMsg').innerHTML=msg; document.getElementById('myAlert').style.display='block'; }
 function closeAlert(){ document.getElementById('myAlert').style.display='none'; }
 
-/* تحميل البيانات */
+/* Anonymous Auth للزوار */
 auth.onAuthStateChanged(user=>{
+    if(!user) auth.signInAnonymously();
     const isAdmin = user && !user.isAnonymous && user.email==="your-admin-email@gmail.com";
     document.getElementById('loginForm').style.display = isAdmin?'none':'block';
     document.getElementById('adminControls').style.display = isAdmin?'block':'none';
     const header = document.getElementById('payoutHeader');
     header.innerHTML = `<th>الاسم</th><th>حالة الاستلام</th>${isAdmin?'<th>تحكم</th>':''}`;
-    if(!user) auth.signInAnonymously();
     loadData();
 });
 
+/* تحميل البيانات */
 function loadData(){
     db.ref().on('value', snap=>{
         const data = snap.val() || {};
         const payments = data.payments ? (data.payments[monthKey] || {}) : {};
         const received = data.received_totals || {};
-        const isAdmin = auth.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.email==="your-admin-email@gmail.com";
+        const user = auth.currentUser;
+        const isAdmin = user && !user.isAnonymous && user.email==="your-admin-email@gmail.com";
 
         let h='';
         members.forEach((name,i)=>{
@@ -135,25 +138,38 @@ function loadData(){
     });
 }
 
+/* تحقق الكود للزائر */
 function verify(id,name){
-    showAlert("⚠️ سيتم التأكيد بواسطة المسؤول فقط!");
+    const codeInput = document.getElementById('in-'+id).value;
+    if(!codeInput) return showAlert("❌ الرجاء إدخال الكود أولاً");
+
+    db.ref('secret_codes/'+id).once('value').then(snap=>{
+        const correctCode = snap.val();
+        if(String(codeInput) === String(correctCode)){
+            db.ref(`payments/${monthKey}/${id}`).set({status:true, date: new Date().toLocaleDateString('ar-EG')});
+            showAlert(`✅ تم تأكيد الكود الخاص بـ ${name}`);
+            sendPushNotification(`✅ تم تأكيد استلام مبلغ من: ${name}`);
+        } else {
+            showAlert("❌ الكود غير صحيح. حاول مرة أخرى.");
+        }
+    });
 }
 
-function resetMonthData(){
+/* لوحة المسؤول */
+function resetMonthData(){ 
     if(confirm("تصفير الشهر؟")){
         db.ref(`payments/${monthKey}`).remove();
         sendPushNotification("📅 تم تصفير السجل لشهر جديد");
     }
 }
-
 function toggleRec(id,s){ db.ref(`received_totals/${id}`).set(!s); }
-
 function toggleAdminView(){ const p=document.getElementById('adminPanel'); p.style.display=(p.style.display==='block')?'none':'block'; }
 function loginAdmin(){ auth.signInWithEmailAndPassword(document.getElementById('email').value,document.getElementById('pass').value).catch(e=>showAlert(e.message)); }
 function logoutAdmin(){ auth.signOut().then(()=>location.reload()); }
 
+/* إرسال الإشعارات */
 function sendPushNotification(msg){
-    fetch('/api/send-notification', {
+    fetch('/api/send-notification',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({message: msg})
