@@ -1,157 +1,109 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>استماع القرآن الكريم</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#0b1120;
-  --card:#111827;
-  --gold:#d4af37;
-  --text:#f1f5f9;
-}
-body{margin:0;font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);}
-header{text-align:center;padding:25px;font-size:26px;font-weight:bold;background:#0f172a;border-bottom:1px solid #1f2937;}
-.prayer,#cityName,#prayerTable{text-align:center;padding:10px;color:var(--gold);font-size:14px;}
-.countdown{
-  text-align:center;font-size:18px;padding:10px;background:#111827;color:var(--gold);
-  font-weight:bold;margin:10px 0;
-  border-radius:8px;
-  box-shadow: 0 0 10px var(--gold);
-  transition: all 0.3s;
-}
-.reciter{margin-bottom:30px;text-align:center;}
-.reciter h3{color:var(--gold);}
-iframe{width:100%;max-width:825px;border:none;border-radius:12px;}
-footer{text-align:center;padding:20px;font-size:13px;color:#94a3b8;margin-bottom:20px;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جمعية محمد - نظام الدفع المباشر</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f4f8; padding: 20px; text-align: center; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        h1 { color: #1a73e8; margin-bottom: 5px; }
+        .info-box { background: #e8f0fe; padding: 10px; border-radius: 10px; margin-bottom: 25px; color: #1967d2; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 15px; border-bottom: 1px solid #eee; text-align: center; }
+        th { background: #1a73e8; color: white; border-radius: 5px; }
+        .paid { color: #28a745; font-weight: bold; background: #e6ffed; padding: 5px 12px; border-radius: 15px; }
+        .not-paid { color: #dc3545; font-weight: bold; background: #ffeef0; padding: 5px 12px; border-radius: 15px; }
+        input { width: 70px; padding: 6px; border: 1px solid #ddd; border-radius: 5px; text-align: center; }
+        button { background: #34a853; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #2d8e47; }
+    </style>
 </head>
 <body>
 
-<header>🎧 القرآن الكريم - استماع مباشر</header>
+<div class="container">
+    <h1>📊 نظام جمعية محمد</h1>
+    <div class="info-box">القسط: 400 يورو | الموعد: 22 من كل شهر</div>
 
-<div class="prayer" id="locationStatus">جاري تحديد موقعك...</div>
-<div class="prayer" id="cityName"></div>
-<div class="prayer" id="prayerTable"></div>
-<div class="countdown" id="countdown">جاري حساب الصلاة القادمة...</div>
-
-<h2 style="text-align:center;color:#d4af37;">اختر القارئ</h2>
-
-<div class="reciter">
-  <h3>ماهر المعيقلي</h3>
-  <iframe src="https://www.tvquran.com/ar/recitation/82/collection_embeddable" id="iframe1" allowtransparency="1" scrolling="no"></iframe>
+    <table>
+        <thead>
+            <tr>
+                <th>الاسم</th>
+                <th>الحالة</th>
+                <th>تأكيد الدفع</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            </tbody>
+    </table>
 </div>
-
-<div class="reciter">
-  <h3>عبدالولي الاركاني</h3>
-  <iframe src="https://www.tvquran.com/ar/recitation/6/collection_embeddable" id="iframe2" allowtransparency="1" scrolling="no"></iframe>
-</div>
-
-<div class="reciter">
-  <h3>ياسر الدوسري - الاعراف</h3>
-  <iframe src="https://www.tvquran.com/ar/selection/2886/embeddable" id="iframe3" allowtransparency="1" scrolling="no"></iframe>
-</div>
-
-<footer>جميع حقوق التلاوات محفوظة لأصحابها</footer>
 
 <script>
-// ======= تحديد الموقع + مواقيت الصلاة =======
-let prayerTimes = {};
+    // الإعدادات مأخوذة من صورك (Firebase Config)
+    const firebaseConfig = {
+        apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4qU4v170M",
+        authDomain: "jamia-app-5bd27.firebaseapp.com",
+        databaseURL: "https://jamia-app-5bd27-default-rtdb.europe-west1.firebasedatabase.app/",
+        projectId: "jamia-app-5bd27",
+        storageBucket: "jamia-app-5bd27.appspot.com",
+        messagingSenderId: "870308712173",
+        appId: "1:870308712173:web:be101df99fef2085b344a2",
+        measurementId: "G-FZ9GMJTEL1"
+    };
 
-function getLocation(){
-  if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(success, error);
-  } else {
-    document.getElementById("locationStatus").innerHTML = "المتصفح لا يدعم تحديد الموقع";
-  }
-}
+    // تشغيل Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-function success(position){
-  const lat = position.coords.latitude;
-  const lon = position.coords.longitude;
-  document.getElementById("locationStatus").innerHTML = "تم تحديد موقعك ✔";
+    // قائمة الأعضاء والأكواد (يمكنك تغيير الأكواد كما تحب)
+    const members = [
+        { id: 1, name: "محسن", code: "1010" },
+        { id: 2, name: "سليم", code: "2020" },
+        { id: 3, name: "أبو محمد", code: "3030" },
+        { id: 4, name: "مشتاق", code: "4040" },
+        { id: 5, name: "رضوان", code: "5050" },
+        { id: 6, name: "حمزه", code: "6060" },
+        { id: 7, name: "علي", code: "7070" },
+        { id: 8, name: "أبو هتان", code: "8080" },
+        { id: 9, name: "أبو خالد", code: "9090" },
+        { id: 10, name: "عبدالرحمن الصبيح", code: "0000" }
+    ];
 
-  // اسم المدينة
-  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
-    .then(res => res.json())
-    .then(data => {
-      const city = data.address.city || data.address.town || data.address.village || "مدينتك";
-      document.getElementById("cityName").innerHTML = `📍 ${city}`;
+    // جلب البيانات وتحديث الجدول فوراً عند أي تغيير
+    db.ref('payments').on('value', (snapshot) => {
+        const paidStatus = snapshot.val() || {};
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = "";
+
+        members.forEach(member => {
+            const isPaid = paidStatus[member.id] === true;
+            tableBody.innerHTML += `
+                <tr>
+                    <td><strong>${member.name}</strong></td>
+                    <td><span class="${isPaid ? 'paid' : 'not-paid'}">${isPaid ? '✅ تم الدفع' : '❌ لم يدفع'}</span></td>
+                    <td>
+                        ${isPaid ? '✔️' : `
+                            <input type="text" id="code-${member.id}" placeholder="الكود">
+                            <button onclick="confirmPay(${member.id}, '${member.code}')">تأكيد</button>
+                        `}
+                    </td>
+                </tr>
+            `;
+        });
     });
 
-  // مواقيت الصلاة
-  fetch(`https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=4`)
-    .then(res => res.json())
-    .then(data => {
-      prayerTimes = data.data.timings;
-      displayPrayers();
-      startCountdown();
-    });
-}
-
-function error(){
-  document.getElementById("locationStatus").innerHTML = "يرجى السماح بالوصول للموقع لعرض المواقيت";
-}
-
-function displayPrayers(){
-  const names = { Fajr:"الفجر", Dhuhr:"الظهر", Asr:"العصر", Maghrib:"المغرب", Isha:"العشاء" };
-  let html = "";
-  for(let key in names){
-    html += `${names[key]}: ${prayerTimes[key]} | `;
-  }
-  document.getElementById("prayerTable").innerHTML = html;
-}
-
-function startCountdown(){
-  setInterval(()=>{
-    const now = new Date();
-    const prayers = ["Fajr","Dhuhr","Asr","Maghrib","Isha"];
-    const names = { Fajr:"الفجر", Dhuhr:"الظهر", Asr:"العصر", Maghrib:"المغرب", Isha:"العشاء" };
-    for(let i=0;i<prayers.length;i++){
-      let timeStr = prayerTimes[prayers[i]];
-      if(!timeStr) return;
-      let [hours,minutes] = timeStr.split(":");
-      let prayerTime = new Date();
-      prayerTime.setHours(hours,minutes,0);
-      if(prayerTime>now){
-        let diff=prayerTime-now;
-        let h=Math.floor(diff/1000/60/60);
-        let m=Math.floor(diff/1000/60)%60;
-        let s=Math.floor(diff/1000)%60;
-        document.getElementById("countdown").innerHTML =
-        `الصلاة القادمة: ${names[prayers[i]]} بعد ${h}س ${m}د ${s}ث`;
-        return;
-      }
+    function confirmPay(id, correctCode) {
+        const inputCode = document.getElementById('code-' + id).value;
+        if (inputCode === correctCode) {
+            db.ref('payments/' + id).set(true);
+            alert("شكراً لك! تم تأكيد الدفع بنجاح.");
+        } else {
+            alert("الكود غير صحيح، يرجى مراجعة محمد.");
+        }
     }
-  },1000);
-}
-
-// ======= ضبط ارتفاع iframe تلقائي =======
-function adjustIframes(){
-  const winHeight = window.innerHeight;
-  const iframes = [document.getElementById("iframe1"), document.getElementById("iframe2"), document.getElementById("iframe3")];
-  iframes.forEach((frame,index)=>{
-    // نضع ارتفاع مختلف حسب النوع: البث الطويل 670، القصير 280، لكن يتناسب مع الشاشة
-    if(index===2){ // ياسر الدوسري
-      frame.style.height = Math.min(400, winHeight*0.5) + "px";
-    } else {
-      frame.style.height = Math.min(670, winHeight*0.8) + "px";
-    }
-  });
-}
-
-window.onload = function(){
-  getLocation();
-  adjustIframes();
-}
-
-window.onresize = function(){
-  adjustIframes();
-}
-
 </script>
-
 </body>
 </html>
