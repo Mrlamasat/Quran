@@ -3,15 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spaarkring - Admin Pro</title>
-
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({ appId: "564eb270-ccb3-428f-b9f8-f162d56321c4" });
-  });
-</script>
+<title>Spaarkring - Admin Control</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -27,11 +19,10 @@
     th,td { padding:10px 2px; border-bottom:1px solid #eee; text-align:center; font-size: 0.85em; }
     .paid { color:#28a745; font-weight:bold; }
     .not-paid { color:#dc3545; font-weight:bold; }
-    .admin-btn { background:#1a73e8; color:white; border:none; padding:5px; border-radius:5px; cursor:pointer; font-size:0.8em; margin: 2px; }
-    .reset-btn { background:#dc3545; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; margin-top:15px; width: 100%; font-weight: bold; }
+    .admin-btn { background:#1a73e8; color:white; border:none; padding:4px 8px; border-radius:5px; cursor:pointer; font-size:0.8em; }
     #adminSection { display:none; margin-top:30px; padding:20px; border:2px solid #dc3545; border-radius:15px; background:#fff5f5; }
     input { width:45px; padding:5px; text-align:center; border:1px solid #ddd; border-radius:4px; }
-    .admin-input { width: 85%; margin-bottom:10px; padding:8px; border:1px solid #ccc; border-radius:5px; }
+    .admin-input { width: 90%; margin-bottom:10px; padding:8px; border:1px solid #ccc; border-radius:5px; }
 </style>
 </head>
 
@@ -60,19 +51,18 @@
     </div>
 
     <div id="adminSection">
-        <h3 style="color:#dc3545;">لوحة تحكم المسؤول (محمد)</h3>
+        <h3 style="color:#dc3545;">لوحة التحكم (محمد)</h3>
         <input type="email" id="adminEmail" placeholder="البريد الإلكتروني" class="admin-input"><br>
         <input type="password" id="adminPass" placeholder="كلمة المرور" class="admin-input"><br>
-        <button onclick="handleLogin()" style="background:#dc3545; width:85%; padding:10px; color:white; border:none; border-radius:5px;">دخول</button>
+        <button onclick="handleLogin()" style="background:#dc3545; width:90%; padding:10px; color:white; border:none; border-radius:5px; cursor:pointer;">دخول المسؤول</button>
         <hr>
-        <p style="font-size: 0.9em;">أدوات المسؤول:</p>
-        <button class="reset-btn" onclick="resetMonth()">⚠️ تصفير جدول الشهر الجديد</button>
-        <button onclick="logout()" style="margin-top:15px; background:#666; color:white; border:none; padding:8px; border-radius:5px; width:100%;">خروج</button>
+        <button onclick="resetMonth()" style="background:#666; color:white; border:none; padding:8px; border-radius:5px; width:90%; margin-bottom:10px;">تصفير الشهر الجديد</button>
+        <button onclick="logout()" style="background:#444; color:white; border:none; padding:8px; border-radius:5px; width:90%;">خروج</button>
     </div>
 </div>
 
 <script>
-// الإعدادات الجديدة (المصلحة)
+// الإعدادات الجديدة المصلحة من قبلك يا محمد
 const firebaseConfig = {
   apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4xFy5ylz9I",
   authDomain: "jamia-app-5bd27.firebaseapp.com",
@@ -97,12 +87,14 @@ const members = [
 const monthKey = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
 document.getElementById("monthTitle").innerText = "سجل شهر: " + new Date().toLocaleDateString('ar-EG',{month:'long', year:'numeric'});
 
+// مراقبة الدخول لإظهار أزرار التحكم
 auth.onAuthStateChanged(user => {
     if (user && !user.isAnonymous) {
         document.getElementById('adminSection').style.display = 'block';
         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'table-cell');
+        fetchData(); 
     } else {
-        auth.signInAnonymously();
+        auth.signInAnonymously().then(() => fetchData());
     }
 });
 
@@ -114,12 +106,16 @@ function handleLogin() {
 
 function logout() { auth.signOut().then(() => location.reload()); }
 
-db.ref().on('value', snapshot => {
-    const data = snapshot.val() || {};
-    const payments = data.payments ? (data.payments[monthKey] || {}) : {};
-    const received = data.received_totals || {};
+function fetchData() {
+    db.ref().on('value', snapshot => {
+        const data = snapshot.val() || {};
+        const payments = data.payments ? (data.payments[monthKey] || {}) : {};
+        const received = data.received_totals || {};
+        renderTables(payments, received);
+    });
+}
 
-    // جدول الأقساط
+function renderTables(payments, received) {
     let html = '';
     members.forEach(m => {
         const p = payments[m.id] || {};
@@ -133,7 +129,6 @@ db.ref().on('value', snapshot => {
     });
     document.getElementById('tableBody').innerHTML = html;
 
-    // جدول الاستلام (مع زر تعديل للمسؤول)
     let rHtml = '';
     const isAdmin = auth.currentUser && !auth.currentUser.isAnonymous;
     members.forEach(m => {
@@ -141,26 +136,26 @@ db.ref().on('value', snapshot => {
         rHtml += `<tr>
             <td>${m.name}</td>
             <td><span class="${hasRec?'paid':'not-paid'}">${hasRec?'تم الاستلام ✅':'لم يستلم'}</span></td>
-            ${isAdmin ? `<td class="admin-only"><button class="admin-btn" onclick="toggleReceived(${m.id}, ${hasRec})">تبديل</button></td>` : ''}
+            ${isAdmin ? `<td class="admin-only"><button class="admin-btn" onclick="toggleRec(${m.id}, ${hasRec})">تعديل</button></td>` : ''}
         </tr>`;
     });
     document.getElementById('payoutTableBody').innerHTML = rHtml;
-});
+}
 
 function verify(id) {
     const code = document.getElementById('c-' + id).value;
     db.ref('secret_codes/' + id).once('value', snap => {
         if(String(code) === String(snap.val())) {
             db.ref(`payments/${monthKey}/${id}`).set({ status:true, date:new Date().toLocaleDateString('ar-EG') });
-        } else { alert("الكود غير صحيح"); }
+        } else { alert("الكود خطأ"); }
     });
 }
 
-function toggleReceived(id, status) { db.ref(`received_totals/${id}`).set(!status); }
+function toggleRec(id, status) { db.ref(`received_totals/${id}`).set(!status); }
 
 function resetMonth() {
-    if(confirm("هل أنت متأكد من تصفير جدول الدفع لهذا الشهر؟")) {
-        db.ref(`payments/${monthKey}`).remove().then(() => alert("تم التصفير بنجاح"));
+    if(confirm("تصفير جميع دفعات هذا الشهر؟")) {
+        db.ref(`payments/${monthKey}`).remove();
     }
 }
 
