@@ -25,7 +25,7 @@
         .payment-notice { background-color: #e8f0fe; border: 1px solid #1a73e8; color: #1a73e8; padding: 15px; border-radius: 12px; margin-bottom: 20px; font-weight: bold; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
-        th, td { padding: 10px 2px; border-bottom: 1px solid #eee; text-align: center; font-size: 0.85em; }
+        th, td { padding: 10px 2px; border-bottom: 1px solid #eee; text-align: center; font-size: 0.85em; word-wrap: break-word; }
         th { background: #f8f9fa; color: #555; }
         
         .paid { color: #28a745; font-weight: bold; background: #e6ffed; padding: 4px 8px; border-radius: 10px; }
@@ -74,8 +74,8 @@
             <table>
                 <thead>
                     <tr>
-                        <th>الاسم</th>
-                        <th>حالة الاستلام</th>
+                        <th style="width: 50%;">الاسم</th>
+                        <th style="width: 50%;">حالة الاستلام</th>
                     </tr>
                 </thead>
                 <tbody id="receiveTableBody"></tbody>
@@ -84,7 +84,6 @@
     </div>
 
 <script>
-    // Firebase Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4qU4v170M",
         authDomain: "jamia-app-5bd27.firebaseapp.com",
@@ -97,7 +96,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // القائمة المحدثة: حمزه بدل عبدالرحمن، وحذف الصبيح
     const members = [
         { id: 1, name: "محسن" }, { id: 2, name: "سليم" }, { id: 3, name: "أبو محمد" },
         { id: 4, name: "مشتاق" }, { id: 5, name: "رضوان" }, { id: 6, name: "حمزه" },
@@ -115,47 +113,56 @@
         document.getElementById('overlay').style.display = 'none';
     }
 
-    // جلب البيانات وعرض الجداول
-    db.ref().on('value', snapshot => {
-        const data = snapshot.val() || {};
-        const paidStatus = data.payments || {};
-        const receivedStatus = data.received_totals || {};
+    // وظيفة عرض الجداول
+    function updateUI() {
+        db.ref().on('value', snapshot => {
+            const data = snapshot.val() || {};
+            const paidStatus = data.payments || {};
+            const receivedStatus = data.received_totals || {};
 
-        // جدول الأقساط
-        const tableBody = document.getElementById('tableBody');
-        tableBody.innerHTML = '';
-        members.forEach(m => {
-            const isPaid = paidStatus[m.id]?.status === true;
-            tableBody.innerHTML += `
-                <tr>
-                    <td>${m.name}</td>
-                    <td><span class="${isPaid ? 'paid' : 'not-paid'}">${isPaid ? 'تم الدفع' : 'لم يدفع'}</span></td>
+            // تحديث جدول الأقساط
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            members.forEach(m => {
+                const isPaid = paidStatus[m.id]?.status === true;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${m.name}</strong></td>
+                    <td><span class="${isPaid ? 'paid' : 'not-paid'}">${isPaid ? 'تم' : '❌'}</span></td>
                     <td>${isPaid ? paidStatus[m.id].date : '-'}</td>
                     <td>${isPaid ? '✅' : `<input type="password" id="c-${m.id}"><button onclick="verify(${m.id})">OK</button>`}</td>
-                </tr>`;
-        });
+                `;
+                tableBody.appendChild(tr);
+            });
 
-        // جدول الاستلام الكلي
-        const receiveBody = document.getElementById('receiveTableBody');
-        receiveBody.innerHTML = '';
-        members.forEach(m => {
-            const hasReceived = receivedStatus[m.id] === true;
-            receiveBody.innerHTML += `
-                <tr>
-                    <td>${m.name}</td>
-                    <td><span class="${hasReceived ? 'received' : 'not-paid'}">${hasReceived ? 'تم الاستلام ✅' : 'لم يستلم بعد'}</span></td>
-                </tr>`;
+            // تحديث جدول الاستلام الكلي
+            const receiveBody = document.getElementById('receiveTableBody');
+            receiveBody.innerHTML = '';
+            members.forEach(m => {
+                const hasReceived = receivedStatus[m.id] === true;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${m.name}</strong></td>
+                    <td><span class="${hasReceived ? 'received' : 'not-paid'}">${hasReceived ? 'تم الاستلام' : 'لم يستلم'}</span></td>
+                `;
+                receiveBody.appendChild(tr);
+            });
         });
-    });
+    }
+
+    // استدعاء الوظيفة عند التحميل
+    updateUI();
 
     function verify(id) {
-        const code = document.getElementById('c-' + id).value;
+        const codeInput = document.getElementById('c-' + id);
+        const code = codeInput.value;
         db.ref('secret_codes/' + id).once('value').then(snap => {
             if (String(code) === String(snap.val())) {
                 db.ref('payments/' + id).set({ status: true, date: new Date().toLocaleDateString('en-GB') });
-                showAlert("تم التأكيد بنجاح");
+                showAlert("تمت العملية بنجاح يا " + members.find(m => m.id === id).name);
             } else {
-                showAlert("الكود خاطئ");
+                showAlert("الكود الذي أدخلته غير صحيح");
+                codeInput.value = '';
             }
         });
     }
