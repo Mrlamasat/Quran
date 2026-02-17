@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spaarkring - Secure</title>
 
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "564eb270-ccb3-428f-b9f8-f162d56321c4",
+    });
+  });
+</script>
+
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -14,15 +24,15 @@ body { font-family: 'Segoe UI', sans-serif; background:#f0f4f8; padding:10px; te
 .container { max-width:100%; margin:auto; background:white; padding:20px; border-radius:20px; box-shadow:0 10px 20px rgba(0,0,0,0.1); border-top:8px solid #1a73e8; margin-bottom:20px; }
 h1 { color:#1a73e8; margin-bottom:15px; font-size:2em; }
 .payment-notice { background:#e8f0fe; border:1px solid #1a73e8; padding:15px; border-radius:12px; margin-bottom:20px; font-weight:bold; }
-.payout-info { background-color:#e6ffed; border:2px dashed #34a853; color:#2e7d32; padding:15px; border-radius:12px; margin-top:20px; font-weight:bold; font-size:1.2em; }
-table { width:100%; border-collapse:collapse; margin-top:10px; }
-th,td { padding:10px; border-bottom:1px solid #eee; text-align:center; }
+.payout-info { background-color:#e6ffed; border:2px dashed #34a853; color:#2e7d32; padding:15px; border-radius:12px; margin-top:20px; font-weight:bold; font-size:1.1em; }
+table { width:100%; border-collapse:collapse; margin-top:10px; table-layout: fixed; }
+th,td { padding:8px 2px; border-bottom:1px solid #eee; text-align:center; font-size: 0.85em; }
 th { background:#f8f9fa; }
 .paid { color:#28a745; font-weight:bold; }
 .not-paid { color:#dc3545; font-weight:bold; }
-.received-name { color:#155724; font-weight:bold; }
-input { width:50px; padding:5px; text-align:center; border:1px solid #ddd; border-radius:4px; }
-button { background:#34a853; color:white; border:none; padding:6px 10px; border-radius:5px; cursor:pointer; }
+.received-status { color:#1a73e8; font-weight:bold; background:#e8f0fe; padding:4px 8px; border-radius:10px; }
+input { width:40px; padding:5px; text-align:center; border:1px solid #ddd; border-radius:4px; }
+button { background:#34a853; color:white; border:none; padding:6px 8px; border-radius:5px; cursor:pointer; }
 #overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; }
 #customAlert { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:20px; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.3); z-index:1000; width:85%; max-width:320px; }
 .close-btn { background:#1a73e8; color:white; border:none; padding:8px 20px; border-radius:5px; margin-top:10px; cursor:pointer; width:100%; }
@@ -50,35 +60,32 @@ button { background:#34a853; color:white; border:none; padding:6px 10px; border-
 <table>
 <thead>
 <tr>
-<th>الاسم</th>
-<th>الحالة</th>
-<th>التاريخ</th>
-<th>تأكيد</th>
+<th style="width:25%;">الاسم</th>
+<th style="width:25%;">الحالة</th>
+<th style="width:25%;">التاريخ</th>
+<th style="width:25%;">تأكيد</th>
 </tr>
 </thead>
 <tbody id="tableBody"></tbody>
 </table>
 
-<hr style="margin:30px 0; border:0; border-top:1px solid #eee;">
-
-<h2>سجل استلام المبالغ</h2>
+<div class="payout-info">
+💰 يستلم كل عضو مبلغ: 4000 يورو
+<h3>سجل استلام المبالغ</h3>
 <table>
 <thead>
 <tr>
-<th style="width:50%;">اسم المستلم</th>
-<th style="width:50%;">تاريخ الاستلام</th>
+<th>الاسم</th>
+<th>الحالة</th>
 </tr>
 </thead>
 <tbody id="payoutTableBody"></tbody>
 </table>
-
-<div class="payout-info">
-💰 يستلم كل عضو مبلغ: 4000 يورو
 </div>
 </div>
 
 <script>
-// Firebase
+// Firebase Config
 const firebaseConfig = {
     apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4qU4v170M",
     authDomain: "jamia-app-5bd27.firebaseapp.com",
@@ -91,107 +98,74 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// الأعضاء
+// قائمة الأعضاء (حمزة بدلاً من عبدالرحمن وحذف الصبيح)
 const members = [
 { id:1, name:"محسن" },
 { id:2, name:"سليم" },
 { id:3, name:"أبو محمد" },
 { id:4, name:"مشتاق" },
 { id:5, name:"رضوان" },
-{ id:6, name:"عبدالرحمن" },
+{ id:6, name:"حمزة" },
 { id:7, name:"علي" },
 { id:8, name:"أبو هتان" },
 { id:9, name:"أبو خالد" },
-{ id:10, name:"حمزة" }
+{ id:10, name:"عبدالرحمن" }
 ];
 
-// الشهر الحالي
 function getCurrentMonthKey(){ const now=new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`; }
-function getMonthName(){ return new Date().toLocaleDateString('ar-EG',{year:'numeric', month:'long'}); }
 const monthKey = getCurrentMonthKey();
-document.getElementById("monthTitle").innerText = "سجل شهر: " + getMonthName();
+document.getElementById("monthTitle").innerText = "سجل شهر: " + new Date().toLocaleDateString('ar-EG',{year:'numeric', month:'long'});
 
-// نافذة منبثقة
 function showAlert(msg){ document.getElementById('alertMessage').innerText = msg; document.getElementById('customAlert').style.display='block'; document.getElementById('overlay').style.display='block'; }
 function closeAlert(){ document.getElementById('customAlert').style.display='none'; document.getElementById('overlay').style.display='none'; }
 
-// تسجيل الدخول المجهول
-firebase.auth().signInAnonymously()
-.then(()=>{ console.log("تم تسجيل الدخول كمجهول"); startApp(); })
-.catch(e=>console.error("فشل تسجيل الدخول:",e));
-
-// البداية
-function startApp(){
-    db.ref('payments/' + monthKey).on('value', snapshot=>{
-        const data = snapshot.val() || {};
-        renderTable(data);
-        renderPayoutTable(data);
-        checkLatePayments(data);
-    });
-}
-
-// رسم جدول الدفع
-function renderTable(data){
+// تشغيل التطبيق
+db.ref().on('value', snapshot => {
+    const data = snapshot.val() || {};
+    const payments = data.payments ? (data.payments[monthKey] || {}) : {};
+    const received = data.received_totals || {};
+    
+    // جدول الأقساط
     const tableBody = document.getElementById("tableBody");
     tableBody.innerHTML='';
     members.forEach(member=>{
-        const memberData = data[member.id] || {};
-        const isPaid = memberData.status===true;
-        const payDate = isPaid ? memberData.date : '-';
-        const tr = document.createElement("tr");
-        tr.innerHTML=`
-            <td><strong>${member.name}</strong></td>
-            <td class="${isPaid?'paid':'not-paid'}">${isPaid?'✅ مدفوع':'❌ غير مدفوع'}</td>
-            <td>${payDate}</td>
-            <td>
-                ${isPaid?'✔️':`<input type="password" id="code-${member.id}" placeholder="***">
-                <button onclick="submitCode(${member.id})">OK</button>`}
-            </td>
-        `;
-        tableBody.appendChild(tr);
+        const mData = payments[member.id] || {};
+        const isPaid = mData.status===true;
+        tableBody.innerHTML += `
+            <tr>
+                <td><strong>${member.name}</strong></td>
+                <td class="${isPaid?'paid':'not-paid'}">${isPaid?'✅':'❌'}</td>
+                <td>${isPaid ? mData.date : '-'}</td>
+                <td>
+                    ${isPaid?'✔️':`<input type="password" id="code-${member.id}" placeholder="***"><button onclick="submitCode(${member.id})">OK</button>`}
+                </td>
+            </tr>`;
     });
-}
 
-// رسم سجل الاستلام
-function renderPayoutTable(data){
-    const tbody = document.getElementById("payoutTableBody");
-    tbody.innerHTML='';
+    // جدول الاستلام (في الأسفل)
+    const payoutBody = document.getElementById("payoutTableBody");
+    payoutBody.innerHTML='';
     members.forEach(member=>{
-        const memberData = data[member.id] || {};
-        if(memberData.status===true){
-            const tr = document.createElement("tr");
-            tr.innerHTML=`<td class="received-name">${member.name}</td><td>${memberData.date}</td>`;
-            tbody.appendChild(tr);
-        }
+        const hasReceived = received[member.id] === true;
+        payoutBody.innerHTML += `
+            <tr>
+                <td>${member.name}</td>
+                <td><span class="${hasReceived?'received-status':'not-paid'}">${hasReceived?'تم الاستلام':'لم يستلم'}</span></td>
+            </tr>`;
     });
-}
+});
 
-// إدخال الكود والتحقق
-function submitCode(memberId){
-    const input = document.getElementById('code-'+memberId);
-    const code = input.value.trim();
-    if(!code){ alert("❌ يرجى إدخال الكود"); return; }
-
-    db.ref(`secret_codes/${memberId}`).once('value').then(snapshot=>{
-        const correctCode = snapshot.val();
-        if(correctCode!==null && String(code)===String(correctCode)){
+function submitCode(id){
+    const code = document.getElementById('code-'+id).value;
+    if(!code) return showAlert("يرجى إدخال الكود");
+    db.ref(`secret_codes/${id}`).once('value').then(snap=>{
+        if(String(code)===String(snap.val())){
             const dateStr=new Date().toLocaleDateString('ar-EG');
-            db.ref(`payments/${monthKey}/${memberId}`).set({ status:true, date:dateStr })
-            .then(()=> alert("✅ تم تأكيد الدفع"));
-        } else { alert("❌ الكود غير صحيح!"); input.value=''; }
+            db.ref(`payments/${monthKey}/${id}`).set({ status:true, date:dateStr })
+            .then(()=> showAlert("✅ تم تأكيد الدفع"));
+        } else { showAlert("❌ الكود غير صحيح!"); }
     });
-}
-
-// التحقق من التأخير
-function checkLatePayments(data){
-    const today=new Date().getDate();
-    if(today<22) return;
-    const unpaid = members.filter(m => !data[m.id] || data[m.id].status!==true).map(m=>m.name);
-    if(unpaid.length>0){
-        setTimeout(()=>{ showAlert("⚠️ تذكير: الأعضاء غير المدفوعين هذا الشهر:\n"+unpaid.join(', ')); }, 1000);
-    }
 }
 </script>
-
 </body>
 </html>
