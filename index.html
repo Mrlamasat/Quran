@@ -1,135 +1,17 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spaarkring - Secure</title>
-    
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-    <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: "564eb270-ccb3-428f-b9f8-f162d56321c4",
-        });
-      });
-    </script>
-
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f4f8; padding: 10px; text-align: center; }
-        .container { max-width: 100%; margin: auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-top: 8px solid #1a73e8; margin-bottom: 20px; }
-        h1 { color: #1a73e8; text-transform: uppercase; margin-bottom: 15px; font-size: 2.2em; }
-        h2 { color: #34a853; font-size: 1.5em; margin-top: 20px; }
-        
-        .payment-notice { 
-            background-color: #e8f0fe; 
-            border: 1px solid #1a73e8; 
-            color: #1a73e8; 
-            padding: 15px; 
-            border-radius: 12px; 
-            margin-bottom: 20px; 
-            font-weight: bold; 
-            line-height: 1.6;
-        }
-        .payout-info {
-            background-color: #e6ffed;
-            border: 2px dashed #34a853;
-            color: #2e7d32;
-            padding: 15px;
-            border-radius: 12px;
-            margin-top: 20px;
-            font-weight: bold;
-            font-size: 1.2em;
-        }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
-        th, td { padding: 12px 5px; border-bottom: 1px solid #eee; text-align: center; font-size: 0.95em; }
-        th { background: #f8f9fa; color: #555; }
-        .paid { color: #28a745; font-weight: bold; background: #e6ffed; padding: 6px 10px; border-radius: 12px; display: inline-block; }
-        .not-paid { color: #dc3545; font-weight: bold; background: #ffeef0; padding: 6px 10px; border-radius: 12px; display: inline-block; }
-        .received { color: #155724; background-color: #d4edda; font-weight: bold; padding: 5px; border-radius: 5px; }
-        
-        input { width: 60px; padding: 6px; border: 1px solid #ddd; border-radius: 5px; text-align: center; }
-        button { background: #34a853; color: white; border: none; padding: 7px 12px; border-radius: 5px; cursor: pointer; }
-        
-        #customAlert { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 15px; box-shadow: 0 0 30px rgba(0,0,0,0.3); z-index: 1000; width: 85%; max-width: 320px; }
-        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
-        .close-btn { background: #1a73e8; color: white; border: none; padding: 8px 20px; border-radius: 5px; margin-top: 15px; cursor: pointer; width: 100%; }
-        
-        @media screen and (max-width: 600px) {
-            th, td { font-size: 0.8em; padding: 8px 2px; }
-            .container { padding: 10px; }
-            h1 { font-size: 1.8em; }
-        }
-    </style>
-</head>
-<body>
-    <div id="overlay"></div>
-    <div id="customAlert">
-        <p id="alertMessage" style="font-weight: bold; font-size: 1.1em;"></p>
-        <button class="close-btn" onclick="closeAlert()">موافق</button>
-    </div>
-
-    <div class="container">
-        <h1>Spaarkring</h1>
-        <div class="payment-notice">
-            📢 المبلغ المطلوب: 400 يورو <br>
-            📅 موعد الدفع: 22 من كل شهر
-        </div>
-        
-        <h3>جدول الدفع الشهري</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 25%;">الاسم</th>
-                    <th style="width: 25%;">الحالة</th>
-                    <th style="width: 25%;">التاريخ</th>
-                    <th style="width: 25%;">تأكيد</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-        </table>
-
-        <hr style="margin: 30px 0; border: 0; border-top: 1px solid #eee;">
-
-        <h2>سجل استلام المبالغ</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 50%;">اسم المستلم</th>
-                    <th style="width: 50%;">تاريخ الاستلام</th>
-                </tr>
-            </thead>
-            <tbody id="payoutTableBody">
-                <tr>
-                    <td><span class="received">#</span></td>
-                    <td>#</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div class="payout-info">
-            💰 يستلم كل عضو مبلغ: 4000 يورو
-        </div>
-    </div>
-
 <script>
     const firebaseConfig = {
-        apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4qU4v170M",
-        authDomain: "jamia-app-5bd27.firebaseapp.com",
-        databaseURL: "https://jamia-app-5bd27-default-rtdb.europe-west1.firebasedatabase.app/",
-        projectId: "jamia-app-5bd27",
-        storageBucket: "jamia-app-5bd27.appspot.com",
-        messagingSenderId: "870308712173",
-        appId: "1:870308712173:web:be101df99fef2085b344a2"
+        apiKey: "YOUR_KEY",
+        authDomain: "YOUR_DOMAIN",
+        databaseURL: "YOUR_DB_URL",
+        projectId: "YOUR_ID",
+        storageBucket: "YOUR_BUCKET",
+        messagingSenderId: "YOUR_MSG_ID",
+        appId: "YOUR_APP_ID"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // القائمة المعدلة بالأسماء الجديدة
     const members = [
         { id: 1, name: "محسن" }, { id: 2, name: "سليم" }, { id: 3, name: "أبو محمد" },
         { id: 4, name: "مشتاق" }, { id: 5, name: "رضوان" }, { id: 6, name: "عبدالرحمن" },
@@ -137,76 +19,82 @@
         { id: 10, name: "حمزة" }
     ];
 
+    function getCurrentMonthKey() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        return `${year}-${month}`;
+    }
+
     function showAlert(msg) {
         document.getElementById('alertMessage').innerText = msg;
         document.getElementById('customAlert').style.display = 'block';
         document.getElementById('overlay').style.display = 'block';
     }
+
     function closeAlert() {
         document.getElementById('customAlert').style.display = 'none';
         document.getElementById('overlay').style.display = 'none';
     }
 
-    function checkLatePayments(paidStatus) {
-        const today = new Date();
-        const currentDay = today.getDate();
-        if (currentDay >= 22) {
-            let isAnyLate = false;
-            members.forEach(m => {
-                if (!paidStatus[m.id] || paidStatus[m.id].status !== true) isAnyLate = true;
-            });
-            if (isAnyLate) {
-                setTimeout(() => {
-                    showAlert("⚠️ تذكير: نحن الآن في يوم " + currentDay + " وهناك أعضاء لم يسددوا القسط بعد.");
-                }, 3000);
-            }
-        }
-    }
-
     function renderTable(paidStatus) {
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
+
         members.forEach(member => {
             const isPaid = paidStatus[member.id]?.status === true;
             const payDate = isPaid ? paidStatus[member.id].date : '-';
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${member.name}</strong></td>
-                <td><span class="${isPaid ? 'paid' : 'not-paid'}">${isPaid ? '✅' : '❌'}</span></td>
+                <td>
+                    <span class="${isPaid ? 'paid' : 'not-paid'}">
+                        ${isPaid ? 'مدفوع' : 'غير مدفوع'}
+                    </span>
+                </td>
                 <td>${payDate}</td>
                 <td>
                     ${isPaid ? '✔️' : `
-                    <input type="password" id="code-${member.id}" placeholder="***">
-                    <button onclick="checkSecretCode(${member.id})">OK</button>`}
+                        <input type="password" id="code-${member.id}" placeholder="***">
+                        <button onclick="submitCode(${member.id})">تأكيد</button>
+                    `}
                 </td>
             `;
             tableBody.appendChild(tr);
         });
-        checkLatePayments(paidStatus);
     }
 
-    db.ref('payments').on('value', snapshot => {
-        renderTable(snapshot.val() || {});
-    });
+    function submitCode(memberId) {
+        const input = document.getElementById('code-' + memberId);
+        const code = input.value.trim();
 
-    function checkSecretCode(memberId) {
-        const inputField = document.getElementById('code-' + memberId);
-        const inputCode = inputField.value.trim();
-        if (!inputCode) { showAlert('❌ يرجى إدخال الكود'); return; }
+        if (!code) {
+            showAlert("❌ أدخل الكود");
+            return;
+        }
 
-        db.ref('secret_codes/' + memberId).once('value').then(snapshot => {
-            const secretCode = snapshot.val();
-            if (secretCode !== null && String(inputCode) === String(secretCode)) {
-                const now = new Date();
-                const dateStr = now.toLocaleDateString('en-GB');
-                db.ref('payments/' + memberId).set({ status: true, date: dateStr });
-                showAlert('✅ تم التحقق بنجاح!');
-            } else {
-                showAlert('❌ الكود غير صحيح!');
-                inputField.value = '';
-            }
+        const monthKey = getCurrentMonthKey();
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('ar-EG');
+
+        db.ref(`payments/${monthKey}/${memberId}`).set({
+            status: true,
+            date: dateStr,
+            code: code
+        })
+        .then(() => {
+            showAlert("✅ تم تسجيل الدفع لهذا الشهر");
+        })
+        .catch(() => {
+            showAlert("❌ الكود غير صحيح");
+            input.value = '';
         });
     }
+
+    const monthKey = getCurrentMonthKey();
+
+    db.ref('payments/' + monthKey).on('value', snapshot => {
+        renderTable(snapshot.val() || {});
+    });
 </script>
-</body>
-</html>
