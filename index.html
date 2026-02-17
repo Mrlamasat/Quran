@@ -50,6 +50,7 @@ button { background:#34a853; color:white; border:none; padding:6px 10px; border-
 </div>
 
 <script>
+// إعداد Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4qU4v170M",
     authDomain: "jamia-app-5bd27.firebaseapp.com",
@@ -59,10 +60,10 @@ const firebaseConfig = {
     messagingSenderId: "870308712173",
     appId: "1:870308712173:web:be101df99fef2085b344a2"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+// الأعضاء
 const members = [
 { id:1, name:"محسن" },
 { id:2, name:"سليم" },
@@ -76,38 +77,42 @@ const members = [
 { id:10, name:"حمزة" }
 ];
 
+// دالة الشهر الحالي
 function getCurrentMonthKey(){
     const now=new Date();
     const year=now.getFullYear();
     const month=String(now.getMonth()+1).padStart(2,'0');
     return `${year}-${month}`;
 }
-
 function getMonthName(){
     const now=new Date();
     return now.toLocaleDateString('ar-EG',{year:'numeric',month:'long'});
 }
 
-const monthKey=getCurrentMonthKey();
-document.getElementById("monthTitle").innerText="شهر: "+getMonthName();
+const monthKey = getCurrentMonthKey();
+document.getElementById("monthTitle").innerText = "شهر: " + getMonthName();
 
+// رسم الجدول
 function renderTable(data){
-    const tableBody=document.getElementById("tableBody");
-    tableBody.innerHTML='';
+    const tableBody = document.getElementById("tableBody");
+    tableBody.innerHTML = '';
 
-    members.forEach(member=>{
-        const isPaid=data[member.id]?.status===true;
-        const payDate=isPaid?data[member.id].date:'-';
+    const paymentsData = data || {};
 
-        const tr=document.createElement("tr");
-        tr.innerHTML=`
+    members.forEach(member => {
+        const memberData = paymentsData[member.id] || {};
+        const isPaid = memberData.status === true;
+        const payDate = isPaid ? memberData.date : '-';
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
             <td><strong>${member.name}</strong></td>
-            <td class="${isPaid?'paid':'not-paid'}">
-                ${isPaid?'مدفوع':'غير مدفوع'}
+            <td class="${isPaid ? 'paid' : 'not-paid'}">
+                ${isPaid ? 'مدفوع' : 'غير مدفوع'}
             </td>
             <td>${payDate}</td>
             <td>
-                ${isPaid?'✔️':`
+                ${isPaid ? '✔️' : `
                     <input type="password" id="code-${member.id}" placeholder="***">
                     <button onclick="submitCode(${member.id})">تأكيد</button>
                 `}
@@ -117,33 +122,35 @@ function renderTable(data){
     });
 }
 
+// إرسال الكود للتحقق وتسجيل الدفع
 function submitCode(memberId){
-    const input=document.getElementById('code-'+memberId);
-    const code=input.value.trim();
+    const input = document.getElementById('code-' + memberId);
+    const code = input.value.trim();
 
     if(!code){
-        alert("أدخل الكود");
+        alert("❌ أدخل الكود");
         return;
     }
 
-    const dateStr=new Date().toLocaleDateString('ar-EG');
+    const dateStr = new Date().toLocaleDateString('ar-EG');
 
     db.ref(`payments/${monthKey}/${memberId}`).set({
-        status:true,
-        date:dateStr,
-        code:code
+        status: true,
+        date: dateStr,
+        code: code
     })
     .then(()=>{
-        alert("تم تسجيل الدفع");
+        alert("✅ تم تسجيل الدفع لهذا الشهر");
     })
     .catch(()=>{
-        alert("الكود غير صحيح");
-        input.value='';
+        alert("❌ الكود غير صحيح");
+        input.value = '';
     });
 }
 
-db.ref('payments/'+monthKey).on('value',snapshot=>{
-    renderTable(snapshot.val()||{});
+// الاستماع للتحديثات في Firebase
+db.ref('payments/' + monthKey).on('value', snapshot=>{
+    renderTable(snapshot.val() || {});
 });
 </script>
 
