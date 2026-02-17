@@ -20,60 +20,99 @@
     
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #f0f4f8; padding: 10px; text-align: center; }
-        .container { max-width: 100%; margin: auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-top: 8px solid #1a73e8; }
+        .container { max-width: 100%; margin: auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-top: 8px solid #1a73e8; margin-bottom: 20px; }
         h1 { color: #1a73e8; text-transform: uppercase; margin-bottom: 15px; font-size: 2.2em; }
-        .payment-notice { background-color: #e8f0fe; border: 1px solid #1a73e8; color: #1a73e8; padding: 15px; border-radius: 12px; margin-bottom: 20px; font-weight: bold; }
+        h2 { color: #34a853; font-size: 1.5em; margin-top: 20px; }
+        
+        .payment-notice { 
+            background-color: #e8f0fe; 
+            border: 1px solid #1a73e8; 
+            color: #1a73e8; 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin-bottom: 20px; 
+            font-weight: bold; 
+            line-height: 1.6;
+        }
+        .payout-info {
+            background-color: #e6ffed;
+            border: 2px dashed #34a853;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
         table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
-        th, td { padding: 10px 2px; border-bottom: 1px solid #eee; text-align: center; font-size: 0.85em; }
+        th, td { padding: 12px 5px; border-bottom: 1px solid #eee; text-align: center; font-size: 0.95em; }
         th { background: #f8f9fa; color: #555; }
-        .paid { color: #28a745; font-weight: bold; background: #e6ffed; padding: 4px 8px; border-radius: 10px; }
-        .not-paid { color: #dc3545; font-weight: bold; background: #ffeef0; padding: 4px 8px; border-radius: 10px; }
-        .received-status { color: #1a73e8; font-weight: bold; background: #e8f0fe; padding: 4px 8px; border-radius: 10px; }
-        input { width: 45px; padding: 5px; border: 1px solid #ddd; border-radius: 5px; text-align: center; }
-        button { background: #34a853; color: white; border: none; padding: 5px 8px; border-radius: 5px; cursor: pointer; }
-        .footer-section { margin-top: 30px; padding: 15px; background: #fff; border-radius: 15px; border: 2px dashed #1a73e8; }
-        #customAlert { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 15px; box-shadow: 0 0 30px rgba(0,0,0,0.3); z-index: 1000; width: 85%; }
+        .paid { color: #28a745; font-weight: bold; background: #e6ffed; padding: 6px 10px; border-radius: 12px; display: inline-block; }
+        .not-paid { color: #dc3545; font-weight: bold; background: #ffeef0; padding: 6px 10px; border-radius: 12px; display: inline-block; }
+        .received { color: #155724; background-color: #d4edda; font-weight: bold; padding: 5px; border-radius: 5px; }
+        
+        input { width: 60px; padding: 6px; border: 1px solid #ddd; border-radius: 5px; text-align: center; }
+        button { background: #34a853; color: white; border: none; padding: 7px 12px; border-radius: 5px; cursor: pointer; }
+        
+        #customAlert { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 15px; box-shadow: 0 0 30px rgba(0,0,0,0.3); z-index: 1000; width: 85%; max-width: 320px; }
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
+        .close-btn { background: #1a73e8; color: white; border: none; padding: 8px 20px; border-radius: 5px; margin-top: 15px; cursor: pointer; width: 100%; }
+        
+        @media screen and (max-width: 600px) {
+            th, td { font-size: 0.8em; padding: 8px 2px; }
+            .container { padding: 10px; }
+            h1 { font-size: 1.8em; }
+        }
     </style>
 </head>
 <body>
     <div id="overlay"></div>
     <div id="customAlert">
-        <p id="alertMessage"></p>
-        <button onclick="closeAlert()" style="width:100%; padding:10px; background:#1a73e8; color:white; border:none; border-radius:5px;">موافق</button>
+        <p id="alertMessage" style="font-weight: bold; font-size: 1.1em;"></p>
+        <button class="close-btn" onclick="closeAlert()">موافق</button>
     </div>
 
     <div class="container">
         <h1>Spaarkring</h1>
         <div class="payment-notice">
-            📅 موعد القسط: 22 من كل شهر | 💰 المبلغ: 400 يورو
+            📢 المبلغ المطلوب: 400 يورو <br>
+            📅 موعد الدفع: 22 من كل شهر
         </div>
         
-        <h3>جدول الأقساط الشهرية</h3>
+        <h3>جدول الدفع الشهري</h3>
         <table>
             <thead>
                 <tr>
                     <th style="width: 25%;">الاسم</th>
-                    <th style="width: 20%;">الحالة</th>
+                    <th style="width: 25%;">الحالة</th>
                     <th style="width: 25%;">التاريخ</th>
-                    <th style="width: 30%;">تأكيد</th>
+                    <th style="width: 25%;">تأكيد</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
         </table>
 
-        <div class="footer-section">
-            <span style="color: #1a73e8; font-weight: bold;">💰 يستلم كل عضو مبلغ: 4000 يورو</span>
-            <h3>جدول استلام المبالغ الكلية</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>الاسم</th>
-                        <th>حالة الاستلام</th>
-                    </tr>
-                </thead>
-                <tbody id="receiveTableBody"></tbody>
-            </table>
+        <hr style="margin: 30px 0; border: 0; border-top: 1px solid #eee;">
+
+        <h2>سجل استلام المبالغ</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50%;">اسم المستلم</th>
+                    <th style="width: 50%;">تاريخ الاستلام</th>
+                </tr>
+            </thead>
+            <tbody id="payoutTableBody">
+                <tr>
+                    <td><span class="received">عبدالرحمن</span></td>
+                    <td>2026/02/22</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="payout-info">
+            💰 يستلم كل عضو مبلغ: 4000 يورو
         </div>
     </div>
 
@@ -90,9 +129,10 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // القائمة المعدلة بالأسماء الجديدة
     const members = [
         { id: 1, name: "محسن" }, { id: 2, name: "سليم" }, { id: 3, name: "أبو محمد" },
-        { id: 4, name: "مشتاق" }, { id: 5, name: "رضوان" }, { id: 6, name: "حمزه" },
+        { id: 4, name: "مشتاق" }, { id: 5, name: "رضوان" }, { id: 6, name: "عبدالرحمن" },
         { id: 7, name: "علي" }, { id: 8, name: "أبو هتان" }, { id: 9, name: "أبو خالد" },
         { id: 10, name: "عبدالرحمن" }
     ];
@@ -107,47 +147,63 @@
         document.getElementById('overlay').style.display = 'none';
     }
 
-    // جلب البيانات وتحديث الجداول فوراً
-    db.ref().on('value', snapshot => {
-        const data = snapshot.val() || {};
-        const payments = data.payments || {};
-        const received = data.received_totals || {};
+    function checkLatePayments(paidStatus) {
+        const today = new Date();
+        const currentDay = today.getDate();
+        if (currentDay >= 22) {
+            let isAnyLate = false;
+            members.forEach(m => {
+                if (!paidStatus[m.id] || paidStatus[m.id].status !== true) isAnyLate = true;
+            });
+            if (isAnyLate) {
+                setTimeout(() => {
+                    showAlert("⚠️ تذكير: نحن الآن في يوم " + currentDay + " وهناك أعضاء لم يسددوا القسط بعد.");
+                }, 3000);
+            }
+        }
+    }
 
-        // تحديث جدول الأقساط
-        let html = '';
-        members.forEach(m => {
-            const isPaid = payments[m.id]?.status === true;
-            html += `<tr>
-                <td><strong>${m.name}</strong></td>
+    function renderTable(paidStatus) {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
+        members.forEach(member => {
+            const isPaid = paidStatus[member.id]?.status === true;
+            const payDate = isPaid ? paidStatus[member.id].date : '-';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${member.name}</strong></td>
                 <td><span class="${isPaid ? 'paid' : 'not-paid'}">${isPaid ? '✅' : '❌'}</span></td>
-                <td>${isPaid ? payments[m.id].date : '-'}</td>
-                <td>${isPaid ? '✔️' : `<input type="password" id="c-${m.id}" placeholder="***"><button onclick="checkCode(${m.id})">OK</button>`}</td>
-            </tr>`;
+                <td>${payDate}</td>
+                <td>
+                    ${isPaid ? '✔️' : `
+                    <input type="password" id="code-${member.id}" placeholder="***">
+                    <button onclick="checkSecretCode(${member.id})">OK</button>`}
+                </td>
+            `;
+            tableBody.appendChild(tr);
         });
-        document.getElementById('tableBody').innerHTML = html;
+        checkLatePayments(paidStatus);
+    }
 
-        // تحديث جدول الاستلام
-        let receiveHtml = '';
-        members.forEach(m => {
-            const hasRec = received[m.id] === true;
-            receiveHtml += `<tr>
-                <td><strong>${m.name}</strong></td>
-                <td><span class="${hasRec ? 'received-status' : 'not-paid'}">${hasRec ? 'تم الاستلام ✅' : 'لم يستلم'}</span></td>
-            </tr>`;
-        });
-        document.getElementById('receiveTableBody').innerHTML = receiveHtml;
+    db.ref('payments').on('value', snapshot => {
+        renderTable(snapshot.val() || {});
     });
 
-    function checkCode(id) {
-        const code = document.getElementById('c-' + id).value;
-        if(!code) return showAlert("يرجى إدخال الكود أولاً");
-        
-        db.ref('secret_codes/' + id).once('value').then(snap => {
-            if (String(code) === String(snap.val())) {
-                db.ref('payments/' + id).set({ status: true, date: new Date().toLocaleDateString('en-GB') });
-                showAlert("تم التأكيد بنجاح يا " + members.find(m => m.id === id).name);
+    function checkSecretCode(memberId) {
+        const inputField = document.getElementById('code-' + memberId);
+        const inputCode = inputField.value.trim();
+        if (!inputCode) { showAlert('❌ يرجى إدخال الكود'); return; }
+
+        db.ref('secret_codes/' + memberId).once('value').then(snapshot => {
+            const secretCode = snapshot.val();
+            if (secretCode !== null && String(inputCode) === String(secretCode)) {
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('en-GB');
+                db.ref('payments/' + memberId).set({ status: true, date: dateStr });
+                showAlert('✅ تم التحقق بنجاح!');
             } else {
-                showAlert("الكود خاطئ، حاول مرة أخرى");
+                showAlert('❌ الكود غير صحيح!');
+                inputField.value = '';
             }
         });
     }
