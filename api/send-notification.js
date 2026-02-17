@@ -1,12 +1,12 @@
 const https = require("https");
 
 module.exports = (req, res) => {
-  // CORS كامل للسماح لأي موقع
+  // إعداد CORS للسماح لأي موقع
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // معالجة طلب OPTIONS (Preflight)
+  // التعامل مع OPTIONS (Preflight)
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
@@ -16,7 +16,7 @@ module.exports = (req, res) => {
     return res.status(200).send("Server is ready");
   }
 
-  // نص الرسالة
+  // نص الرسالة من الطلب أو افتراضي
   const messageText =
     req.body && req.body.message
       ? req.body.message
