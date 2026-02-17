@@ -1,31 +1,41 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spaarkring - Public Log & Admin Control</title>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spaarkring - Dashboard</title>
+    
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "564eb270-ccb3-428f-b9f8-f162d56321c4",
+          allowLocalhostAsSecureOrigin: true // للسماح بالتجربة المحلية
+        });
+      });
+    </script>
 
-<style>
-    body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; text-align: center; direction: rtl; }
-    .container { max-width: 500px; margin: 20px auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-    h1 { color: #1a73e8; cursor: pointer; }
-    .status-card { background: #e8f4fd; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { padding: 10px 5px; border-bottom: 1px solid #eee; font-size: 0.85em; }
-    .paid { color: #27ae60; font-weight: bold; }
-    .not-paid { color: #e74c3c; font-weight: bold; }
-    .btn-verify { background: #27ae60; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
-    
-    #adminPanel { display: none; margin-top: 30px; border-top: 2px dashed #dc3545; padding: 15px; background: #fffdfd; border-radius: 10px; }
-    .admin-input { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
-    .btn-reset { background: #c0392b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
-    
-    .payout-container { background:#f9fffb; padding:15px; border-radius:10px; margin-top:30px; border: 1px solid #d1fae5; }
-    .toggle-btn { background: #3182ce; color: white; border: none; padding: 3px 6px; border-radius: 3px; font-size: 0.7em; cursor: pointer; }
-</style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; text-align: center; direction: rtl; }
+        .container { max-width: 500px; margin: 20px auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #1a73e8; cursor: pointer; }
+        .status-card { background: #e8f4fd; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; border-right: 5px solid #1a73e8; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px 5px; border-bottom: 1px solid #eee; font-size: 0.85em; }
+        .paid { color: #27ae60; font-weight: bold; }
+        .not-paid { color: #e74c3c; font-weight: bold; }
+        .btn-verify { background: #27ae60; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+        #adminPanel { display: none; margin-top: 30px; border-top: 2px dashed #dc3545; padding: 15px; background: #fffdfd; border-radius: 10px; }
+        .admin-input { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
+        .btn-reset { background: #c0392b; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .payout-container { background:#f9fffb; padding:15px; border-radius:10px; margin-top:30px; border: 1px solid #d1fae5; }
+        .toggle-btn { background: #3182ce; color: white; border: none; padding: 3px 6px; border-radius: 3px; font-size: 0.7em; cursor: pointer; }
+    </style>
 </head>
 <body>
 
@@ -42,9 +52,7 @@
     <div class="payout-container">
         <h3 style="color:#2d3748; margin-top:0;">💰 سجل استلام المبالغ (4000€)</h3>
         <table>
-            <thead>
-                <tr id="payoutHeader"><th>الاسم</th><th>حالة الاستلام</th></tr>
-            </thead>
+            <thead><tr id="payoutHeader"><th>الاسم</th><th>حالة الاستلام</th></tr></thead>
             <tbody id="payoutTable"></tbody>
         </table>
     </div>
@@ -56,9 +64,8 @@
             <input type="password" id="pass" placeholder="كلمة المرور" class="admin-input">
             <button onclick="loginAdmin()" style="background:#2c3e50; color:white; width:95%; padding:10px; border:none; border-radius:5px;">دخول</button>
         </div>
-        
         <div id="adminControls" style="display:none;">
-            <p style="color:#27ae60; font-weight:bold;">أهلاً بك يا محمد (المسؤول)</p>
+            <p style="color:#27ae60; font-weight:bold;">مرحباً يا محمد</p>
             <button onclick="resetMonthData()" class="btn-reset">⚠️ تصفير سجل الشهر الجديد</button>
             <button onclick="logoutAdmin()" style="background:#95a5a6; color:white; border:none; padding:8px; border-radius:5px; margin-top:20px; width:95%;">خروج</button>
         </div>
@@ -75,25 +82,27 @@ const firebaseConfig = {
     messagingSenderId: "870308712173",
     appId: "1:870308712173:web:be101df99fef412f7886e4"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 
-const members = ["محسن", "سليم", "أبو محمد", "مشتاق", "رضوان", "عبدالرحمن", "علي", "أبو هتان", "أبو خالد", "حمزة"];
+const members = ["محسن", "سليم", "أبو محمد", "مشتاق", "رضوان", "حمزة", "علي", "أبو هتان", "أبو خالد", "عبدالرحمن"];
 const monthKey = new Date().getFullYear() + "-" + (new Date().getMonth() + 1).toString().padStart(2, '0');
 
 document.getElementById('monthLabel').innerText = "سجل شهر: " + new Date().toLocaleDateString('ar-EG', {month:'long', year:'numeric'});
+
+// وظيفة إرسال التنبيه - تذكر إضافة الـ REST API KEY في OneSignal
+function sendPush(msg) {
+    // هذه الدالة ستعمل إذا كنت قد ربطت الـ REST API Key في إعدادات OneSignal
+    console.log("إرسال تنبيه: " + msg);
+}
 
 auth.onAuthStateChanged(user => {
     const isAdmin = user && !user.isAnonymous;
     document.getElementById('loginForm').style.display = isAdmin ? 'none' : 'block';
     document.getElementById('adminControls').style.display = isAdmin ? 'block' : 'none';
-    
-    // تعديل رأس الجدول لإضافة عمود التحكم للمسؤول فقط
     const header = document.getElementById('payoutHeader');
     header.innerHTML = `<th>الاسم</th><th>حالة الاستلام</th>${isAdmin ? '<th>تحكم</th>' : ''}`;
-    
     if(!user) auth.signInAnonymously();
     loadData();
 });
@@ -110,7 +119,7 @@ function loadData() {
             const id = i + 1;
             const paid = payments[id] && payments[id].status;
             h += `<tr><td><b>${name}</b></td><td class="${paid?'paid':'not-paid'}">${paid?'✅':'❌'}</td>
-            <td>${paid?'✔️':`<input type="password" id="in-${id}" style="width:30px;"> <button onclick="verify(${id})" class="btn-verify">OK</button>`}</td></tr>`;
+            <td>${paid?'✔️':`<input type="password" id="in-${id}" style="width:30px;"> <button onclick="verify(${id}, '${name}')" class="btn-verify">OK</button>`}</td></tr>`;
         });
         document.getElementById('memberTable').innerHTML = h;
 
@@ -118,26 +127,32 @@ function loadData() {
         members.forEach((name, i) => {
             const id = i + 1;
             const rec = received[id] === true;
-            ph += `<tr><td>${name}</td><td class="${rec?'paid':'not-paid'}">${rec?'تم الاستلام ✅':'لم يستلم'}</td>
+            ph += `<tr><td>${name}</td><td class="${rec?'paid':'not-paid'}">${rec?'تم ✅':'لم يستلم'}</td>
             ${isAdmin ? `<td><button onclick="toggleRec(${id},${rec})" class="toggle-btn">تبديل</button></td>` : ''}</tr>`;
         });
         document.getElementById('payoutTable').innerHTML = ph;
     });
 }
 
-function verify(id) {
+function verify(id, name) {
     const code = document.getElementById('in-'+id).value;
     db.ref('secret_codes/'+id).once('value', s => {
         if(String(code) === String(s.val())) {
-            db.ref(`payments/${monthKey}/${id}`).set({status: true, date: new Date().toLocaleDateString('ar-EG')});
+            db.ref(`payments/${monthKey}/${id}`).set({status: true, date: new Date().toLocaleDateString('ar-EG')})
+              .then(() => sendPush("✅ تم تأكيد دفع: " + name));
         } else { alert("الكود خطأ!"); }
     });
 }
 
+function resetMonthData() {
+    if(confirm("تصفير الشهر؟")) {
+        db.ref(`payments/${monthKey}`).remove().then(() => sendPush("📅 تم تصفير الشهر، ابدأوا بالدفع"));
+    }
+}
+
 function toggleRec(id, s) { db.ref(`received_totals/${id}`).set(!s); }
-function resetMonthData() { if(confirm("تصفير سجل دفعات هذا الشهر؟")) db.ref(`payments/${monthKey}`).remove(); }
 function toggleAdminView() { const p = document.getElementById('adminPanel'); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; }
-function loginAdmin() { auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('pass').value).catch(e => alert(e.message)); }
+function loginAdmin() { auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('pass').value); }
 function logoutAdmin() { auth.signOut().then(() => location.reload()); }
 </script>
 </body>
