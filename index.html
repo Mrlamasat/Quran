@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spaarkring - Dashboard</title>
+<title>Spaarkring</title>
 
 <!-- OneSignal SDK -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
@@ -46,7 +46,7 @@ th, td { padding:10px 5px; border-bottom:1px solid #eee; font-size:0.85em; }
 <body>
 
 <div class="container">
-  <h1>Spaarkring</h1>
+  <h1 onclick="toggleAdminView()">Spaarkring</h1>
   <div class="status-card">📢 القسط: 400 يورو | الموعد: 22 من الشهر</div>
   <h3 id="monthLabel"></h3>
 
@@ -63,7 +63,7 @@ th, td { padding:10px 5px; border-bottom:1px solid #eee; font-size:0.85em; }
     </table>
   </div>
 
-  <!-- لوحة الأدمن -->
+  <!-- لوحة المشرف -->
   <div id="adminPanel">
     <div id="loginForm">
       <h4 style="color:#c0392b;">دخول المسؤول</h4>
@@ -73,7 +73,7 @@ th, td { padding:10px 5px; border-bottom:1px solid #eee; font-size:0.85em; }
     </div>
     <div id="adminControls" style="display:none;">
       <p style="color:#27ae60; font-weight:bold;">أهلاً يا محمد</p>
-      <button onclick="resetMonthData()" class="btn-reset">⚠️ تصفير سجل الشهر الجديد</button>
+      <button onclick="resetMonthData()" class="btn-reset">⚠️ إعادة ضبط سجل الشهر</button>
       <button onclick="logoutAdmin()" style="background:#95a5a6;">خروج</button>
     </div>
   </div>
@@ -108,27 +108,33 @@ document.getElementById('monthLabel').innerText = "سجل شهر: " + new Date()
 function showAlert(msg){ document.getElementById('alertMsg').innerText=msg; document.getElementById('myAlert').style.display='block'; }
 function closeAlert(){ document.getElementById('myAlert').style.display='none'; }
 
-// التحقق من تسجيل الدخول
+// التحقق من تسجيل الدخول وإظهار الأدمن عند الحاجة
 auth.onAuthStateChanged(user=>{
   document.getElementById('adminPanel').style.display = 'block';
-  if(!user) { auth.signInAnonymously(); showAdmin(false); loadData(false); return; }
+  if(!user) { auth.signInAnonymously(); loadData(false); return; }
   const isAdmin = !user.isAnonymous && user.email.toLowerCase() === "mohammeddalmohsen@gmail.com";
   showAdmin(isAdmin);
   loadData(isAdmin);
 });
 
 function showAdmin(isAdmin){
-  document.getElementById('loginForm').style.display = isAdmin ? 'none':'block';
-  document.getElementById('adminControls').style.display = isAdmin ? 'block':'none';
+  document.getElementById('loginForm').style.display = 'none'; // مخفي دائمًا، يظهر عند الضغط على الشعار
+  document.getElementById('adminControls').style.display = isAdmin?'block':'none';
 }
 
-// عرض البيانات
+function toggleAdminView(){
+  const f = document.getElementById('loginForm');
+  f.style.display = (f.style.display==='block')?'none':'block';
+}
+
+// عرض بيانات الأعضاء
 function loadData(isAdmin){
   db.ref().on('value', snap=>{
     const data = snap.val() || {};
     const payments = (data.payments && data.payments[monthKey]) ? data.payments[monthKey] : {};
     const received = data.received_totals || {};
 
+    // جدول الدفع
     let h='';
     members.forEach((name,i)=>{
       const id=i+1;
@@ -139,35 +145,33 @@ function loadData(isAdmin){
         <td>${paid?'✔️':`<input type="number" id="in-${id}" class="code-input" inputmode="numeric"> <button onclick="verify(${id},'${name}')" class="btn-verify">OK</button>`}</td>
       </tr>`;
     });
-    document.getElementById('memberTable').innerHTML = h;
+    document.getElementById('memberTable').innerHTML=h;
 
+    // جدول استلام المبالغ
     let ph='';
     members.forEach((name,i)=>{
       const id=i+1;
       const rec = received[id]===true;
       ph+=`<tr>
         <td>${name}</td>
-        <td class="${rec?'paid':'not-paid'}">${rec?'تم ✅':'لم يستلم'}</td>
-        <td>${isAdmin ? '<button onclick="toggleRec('+id+','+rec+')" class="btn-verify">تبديل</button>':'-'}</td>
+        <td class="${rec?'paid':'not-paid'}">${rec?name+' استلم الجمعية ✅':'لم يستلم'}</td>
+        <td>${isAdmin?`<button onclick="toggleRec(${id},${rec})" class="btn-verify">تبديل</button>`:''}</td>
       </tr>`;
     });
-    document.getElementById('payoutTable').innerHTML = ph;
+    document.getElementById('payoutTable').innerHTML=ph;
   });
 }
 
-// التحقق من الدفع وإرسال إشعار كامل
+// التحقق من الدفع أو الاستلام وإرسال إشعار كامل
 function verify(id,name){
   const val = document.getElementById('in-'+id).value;
   if(!val) return showAlert("يرجى إدخال الكود");
-
   db.ref('secret_codes/'+id).once('value').then(snap=>{
     if(String(val)===String(snap.val())){
       db.ref(`payments/${monthKey}/${id}`).set({status:true,date:new Date().toLocaleDateString()});
       showAlert(`✅ تم التأكيد لـ ${name}`);
-
-      // إرسال إشعار كامل لكل المشتركين
       sendPushNotification(
-        `تم دفع قسط ${name} بنجاح!`,
+        `${name} استلم الجمعية بنجاح ✅`,
         "💰 إشعار دفع القسط",
         "https://example.com/icon.png",
         "https://example.com/banner.jpg",
@@ -195,19 +199,27 @@ async function sendPushNotification(msg, title="إشعار جديد 🔔", icon=
 
 // إعادة تصفير الشهر
 function resetMonthData(){
-  if(confirm("هل أنت متأكد من تصفير سجل هذا الشهر؟")){
+  if(confirm("هل أنت متأكد من إعادة ضبط سجل هذا الشهر؟")){
     db.ref('payments/'+monthKey).remove().then(()=>{
-      showAlert("✅ تم التصفير بنجاح");
-      sendPushNotification("📅 تم تصفير سجل الشهر للجميع","📅 تحديث سجل الشهر");
+      showAlert("📅 تم إعادة ضبط سجل الشهر بنجاح");
+      sendPushNotification("📅 تم إعادة ضبط سجل الشهر بنجاح","📅 تحديث سجل الشهر");
     });
   }
 }
 
 // باقي الدوال
-function toggleRec(id,s){ db.ref('received_totals/'+id).set(!s); }
-function loginAdmin(){ const e=document.getElementById('email').value; const p=document.getElementById('pass').value; auth.signInWithEmailAndPassword(e,p).catch(err=>showAlert("خطأ: "+err.message)); }
+function toggleRec(id,s){ 
+  db.ref('received_totals/'+id).set(!s); 
+  // إرسال إشعار عند تعديل الاستلام
+  const name = document.querySelector(`#payoutTable tr:nth-child(${id}) td:first-child`).innerText;
+  if(!s) sendPushNotification(`${name} استلم الجمعية بنجاح ✅`);
+}
+function loginAdmin(){ 
+  const e=document.getElementById('email').value; 
+  const p=document.getElementById('pass').value; 
+  auth.signInWithEmailAndPassword(e,p).catch(err=>showAlert("خطأ: "+err.message)); 
+}
 function logoutAdmin(){ auth.signOut().then(()=>location.reload()); }
-function toggleAdminView(){ const p=document.getElementById('adminPanel'); p.style.display=(p.style.display==='block')?'none':'block'; }
 </script>
 </body>
 </html>
