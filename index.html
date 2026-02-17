@@ -44,8 +44,8 @@
         input { width: 60px; padding: 6px; border: 1px solid #ddd; border-radius: 5px; text-align: center; }
         button { background: #34a853; color: white; border: none; padding: 7px 12px; border-radius: 5px; cursor: pointer; }
         
-        .footer-notice { margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 15px; border: 2px dashed #1a73e8; }
-        .highlight { color: #1a73e8; font-size: 1.2em; font-weight: bold; display: block; margin-bottom: 15px; }
+        .footer-notice { margin-top: 40px; padding: 20px; background: #fff; border-radius: 15px; border: 2px solid #34a853; }
+        .highlight { color: #1a73e8; font-size: 1.2em; font-weight: bold; display: block; margin-bottom: 10px; }
 
         #customAlert { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 15px; box-shadow: 0 0 30px rgba(0,0,0,0.3); z-index: 1000; width: 85%; max-width: 320px; }
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
@@ -113,7 +113,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // القائمة المحدثة بالأسماء الجديدة
+    // الترتيب والأسماء كما طلبت
     const members = [
         { id: 1, name: "محسن" }, { id: 2, name: "سليم" }, { id: 3, name: "أبو محمد" },
         { id: 4, name: "مشتاق" }, { id: 5, name: "رضوان" }, { id: 6, name: "حمزه" },
@@ -131,47 +131,44 @@
         document.getElementById('overlay').style.display = 'none';
     }
 
-    function renderTables(data) {
-        const paidStatus = data.payments || {};
-        const receivedStatus = data.received_totals || {};
-        
-        // 1. جدول الأقساط
+    // عرض الجداول بشكل صحيح
+    function renderTables(paidStatus, receivedStatus) {
+        // تحديث جدول الأقساط
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
         members.forEach(member => {
             const isPaid = paidStatus[member.id]?.status === true;
             const payDate = isPaid ? paidStatus[member.id].date : '-';
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${member.name}</strong></td>
-                <td><span class="${isPaid ? 'paid' : 'not-paid'}">${isPaid ? '✅' : '❌'}</span></td>
-                <td>${payDate}</td>
-                <td>
-                    ${isPaid ? '✔️' : `
-                    <input type="password" id="code-${member.id}" placeholder="***">
-                    <button onclick="checkSecretCode(${member.id})">OK</button>`}
-                </td>
-            `;
-            tableBody.appendChild(tr);
+            tableBody.innerHTML += `
+                <tr>
+                    <td><strong>${member.name}</strong></td>
+                    <td><span class="${isPaid ? 'paid' : 'not-paid'}">${isPaid ? '✅' : '❌'}</span></td>
+                    <td>${payDate}</td>
+                    <td>
+                        ${isPaid ? '✔️' : `
+                        <input type="password" id="code-${member.id}" placeholder="***">
+                        <button onclick="checkSecretCode(${member.id})">OK</button>`}
+                    </td>
+                </tr>`;
         });
 
-        // 2. جدول الاستلام (الجديد في الأسفل)
+        // تحديث جدول الاستلام الكلي
         const receivedBody = document.getElementById('receivedTableBody');
         receivedBody.innerHTML = '';
         members.forEach(member => {
             const hasReceived = receivedStatus[member.id] === true;
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${member.name}</strong></td>
-                <td><span class="${hasReceived ? 'received-status' : 'not-paid'}">${hasReceived ? 'تم الاستلام' : 'لم يستلم بعد'}</span></td>
-            `;
-            receivedBody.appendChild(tr);
+            receivedBody.innerHTML += `
+                <tr>
+                    <td><strong>${member.name}</strong></td>
+                    <td><span class="${hasReceived ? 'received-status' : 'not-paid'}">${hasReceived ? 'تم الاستلام' : 'لم يستلم'}</span></td>
+                </tr>`;
         });
     }
 
-    // الاستماع لقاعدة البيانات
+    // جلب البيانات من Firebase
     db.ref().on('value', snapshot => {
-        renderTables(snapshot.val() || {});
+        const data = snapshot.val() || {};
+        renderTables(data.payments || {}, data.received_totals || {});
     });
 
     function checkSecretCode(memberId) {
