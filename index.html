@@ -1,134 +1,134 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<!DOCTYPE html><html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spaarkring - Secure</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f4f8; padding: 20px; text-align: center; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 8px solid #1a73e8; }
-        h1 { color: #1a73e8; text-transform: uppercase; margin-bottom: 20px; font-size: 2.2em; letter-spacing: 1px; }
-        
-        .payment-notice {
-            background-color: #e8f0fe;
-            border: 1px solid #1a73e8;
-            color: #1a73e8;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 25px;
-            font-weight: bold;
-            font-size: 1.1em;
-        }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 15px; border-bottom: 1px solid #eee; text-align: center; }
-        th { background: #f8f9fa; color: #555; }
-        .paid { color: #28a745; font-weight: bold; background: #e6ffed; padding: 5px 12px; border-radius: 15px; }
-        .not-paid { color: #dc3545; font-weight: bold; background: #ffeef0; padding: 5px 12px; border-radius: 15px; }
-        input { width: 80px; padding: 6px; border: 1px solid #ddd; border-radius: 5px; text-align: center; }
-        button { background: #34a853; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #2d8e47; }
-        
-        #customAlert { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.3); z-index: 1000; width: 80%; max-width: 300px; }
-        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
-        .close-btn { background: #1a73e8; color: white; border: none; padding: 5px 15px; border-radius: 5px; margin-top: 10px; cursor: pointer; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spaarkring - Secure</title>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<style>
+    body { font-family: 'Segoe UI', sans-serif; background-color: #f0f4f8; padding: 20px; text-align: center; }
+    .container { max-width: 700px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 8px solid #1a73e8; }
+    h1 { color: #1a73e8; text-transform: uppercase; margin-bottom: 20px; font-size: 2.2em; letter-spacing: 1px; }
+    .payment-notice { background-color: #e8f0fe; border: 1px solid #1a73e8; color: #1a73e8; padding: 15px; border-radius: 10px; margin-bottom: 25px; font-weight: bold; font-size: 1.1em; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 15px; border-bottom: 1px solid #eee; text-align: center; }
+    th { background: #f8f9fa; color: #555; }
+    .paid { color: #28a745; font-weight: bold; background: #e6ffed; padding: 5px 12px; border-radius: 15px; }
+    .not-paid { color: #dc3545; font-weight: bold; background: #ffeef0; padding: 5px 12px; border-radius: 15px; }
+    input { width: 80px; padding: 6px; border: 1px solid #ddd; border-radius: 5px; text-align: center; }
+    button { background: #34a853; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; transition: 0.3s; }
+    button:hover { background: #2d8e47; }
+    #customAlert { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.3); z-index: 1000; width: 80%; max-width: 300px; }
+    #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
+    .close-btn { background: #1a73e8; color: white; border: none; padding: 5px 15px; border-radius: 5px; margin-top: 10px; cursor: pointer; }
+</style>
 </head>
-<body>
-
-<div id="overlay"></div>
+<body><div id="overlay"></div>
 <div id="customAlert">
     <p id="alertMessage"></p>
     <button class="close-btn" onclick="closeAlert()">موافق</button>
-</div>
-
-<div class="container">
+</div><div class="container">
     <h1>Spaarkring</h1>
-    
     <div class="payment-notice">
         📢 المبلغ المطلوب: 400 يورو <br>
         📅 موعد الدفع: 22 من كل شهر
     </div>
-
     <table>
         <thead>
             <tr>
                 <th>الاسم</th>
                 <th>الحالة</th>
+                <th>تاريخ الدفع</th>
                 <th>تأكيد الدفع</th>
             </tr>
         </thead>
         <tbody id="tableBody"></tbody>
     </table>
-</div>
+</div><script>
+const firebaseConfig = {
+    apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4qU4v170M",
+    authDomain: "jamia-app-5bd27.firebaseapp.com",
+    databaseURL: "https://jamia-app-5bd27-default-rtdb.europe-west1.firebasedatabase.app/",
+    projectId: "jamia-app-5bd27",
+    storageBucket: "jamia-app-5bd27.appspot.com",
+    messagingSenderId: "870308712173",
+    appId: "1:870308712173:web:be101df99fef2085b344a2"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyC-J-Cg9OeZD--fwStoZTFzK4qU4v170M",
-        authDomain: "jamia-app-5bd27.firebaseapp.com",
-        databaseURL: "https://jamia-app-5bd27-default-rtdb.europe-west1.firebasedatabase.app/",
-        projectId: "jamia-app-5bd27",
-        storageBucket: "jamia-app-5bd27.appspot.com",
-        messagingSenderId: "870308712173",
-        appId: "1:870308712173:web:be101df99fef2085b344a2"
-    };
+const members = [
+    { id: 1, name: "محسن" }, { id: 2, name: "سليم" }, { id: 3, name: "أبو محمد" },
+    { id: 4, name: "مشتاق" }, { id: 5, name: "رضوان" }, { id: 6, name: "حمزه" },
+    { id: 7, name: "علي" }, { id: 8, name: "أبو هتان" }, { id: 9, name: "أبو خالد" },
+    { id: 10, name: "عبدالرحمن الصبيح" }
+];
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+function showAlert(msg) {
+    document.getElementById('alertMessage').innerText = msg;
+    document.getElementById('customAlert').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
+}
+function closeAlert() {
+    document.getElementById('customAlert').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
+}
 
-    const members = [
-        { id: 1, name: "محسن" }, { id: 2, name: "سليم" }, { id: 3, name: "أبو محمد" },
-        { id: 4, name: "مشتاق" }, { id: 5, name: "رضوان" }, { id: 6, name: "حمزه" },
-        { id: 7, name: "علي" }, { id: 8, name: "أبو هتان" }, { id: 9, name: "أبو خالد" },
-        { id: 10, name: "عبدالرحمن الصبيح" }
-    ];
+function renderTable(paidStatus) {
+    const tableBody = document.getElementById('tableBody');
+    tableBody.innerHTML = '';
+    const fragment = document.createDocumentFragment();
 
-    function showAlert(msg) {
-        document.getElementById('alertMessage').innerText = msg;
-        document.getElementById('customAlert').style.display = 'block';
-        document.getElementById('overlay').style.display = 'block';
-    }
-
-    function closeAlert() {
-        document.getElementById('customAlert').style.display = 'none';
-        document.getElementById('overlay').style.display = 'none';
-    }
-
-    db.ref('payments').on('value', (snapshot) => {
-        const paidStatus = snapshot.val() || {};
-        const tableBody = document.getElementById('tableBody');
-        tableBody.innerHTML = "";
-        members.forEach(member => {
-            const isPaid = paidStatus[member.id] === true;
-            tableBody.innerHTML += `
-                <tr>
-                    <td><strong>${member.name}</strong></td>
-                    <td><span class="${isPaid ? 'paid' : 'not-paid'}">${isPaid ? '✅ تم الدفع' : '❌ لم يدفع'}</span></td>
-                    <td>
-                        ${isPaid ? '✔️ مكتمل' : `
-                            <input type="text" id="code-${member.id}" placeholder="الكود">
-                            <button onclick="checkSecretCode(${member.id})">تأكيد</button>
-                        `}
-                    </td>
-                </tr>
-            `;
-        });
+    members.forEach(member => {
+        const tr = document.createElement('tr');
+        const isPaid = paidStatus[member.id]?.status === true;
+        const payDate = isPaid ? paidStatus[member.id].date : '-';
+        tr.setAttribute('data-id', member.id);
+        tr.innerHTML = `
+            <td><strong>${member.name}</strong></td>
+            <td><span class="${isPaid ? 'paid' : 'not-paid'}">${isPaid ? '✅ تم الدفع' : '❌ لم يدفع'}</span></td>
+            <td>${payDate}</td>
+            <td>
+                ${isPaid ? '✔️ مكتمل' : `
+                <input type="password" id="code-${member.id}" placeholder="الكود">
+                <button data-id="${member.id}">تأكيد</button>`}
+            </td>
+        `;
+        fragment.appendChild(tr);
     });
 
-    function checkSecretCode(memberId) {
-        const inputCode = document.getElementById('code-' + memberId).value.trim();
-        db.ref('secret_codes/' + memberId).once('value').then((snapshot) => {
-            const secretCode = snapshot.val();
-            if (secretCode !== null && String(inputCode) === String(secretCode)) {
-                db.ref('payments/' + memberId).set(true);
-                showAlert("✅ تم التحقق بنجاح!");
-            } else {
-                showAlert("❌ الكود غير صحيح! يرجى التأكد من الرقم.");
-            }
-        });
-    }
-</script>
-</body>
+    tableBody.appendChild(fragment);
+
+    document.querySelectorAll('button[data-id]').forEach(btn => {
+        const memberId = btn.getAttribute('data-id');
+        btn.addEventListener('click', () => checkSecretCode(memberId));
+        const inputField = document.getElementById('code-' + memberId);
+        inputField.addEventListener('keyup', (e) => { if (e.key === 'Enter') checkSecretCode(memberId); });
+    });
+}
+
+db.ref('payments').on('value', snapshot => {
+    const paidStatus = snapshot.val() || {};
+    renderTable(paidStatus);
+});
+
+function checkSecretCode(memberId) {
+    const inputField = document.getElementById('code-' + memberId);
+    const inputCode = inputField.value.trim();
+    if (!inputCode) { showAlert('❌ يرجى إدخال الكود'); return; }
+
+    db.ref('secret_codes/' + memberId).once('value').then(snapshot => {
+        const secretCode = snapshot.val();
+        if (secretCode !== null && String(inputCode) === String(secretCode)) {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('ar-EG');
+            db.ref('payments/' + memberId).set({ status: true, date: dateStr });
+            showAlert('✅ تم التحقق بنجاح!');
+        } else {
+            showAlert('❌ الكود غير صحيح! يرجى التأكد من الرقم.');
+            inputField.value = '';
+        }
+    });
+}
+</script></body>
 </html>
