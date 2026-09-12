@@ -85,6 +85,25 @@
     "secret_codes": {
       ".read": false,
       ".write": false
+    },
+    "payout_events": {
+      "$event": {
+        ".read": "auth != null && auth.token.email === 'mohammeddalmohsen@gmail.com' && auth.token.firebase.sign_in_provider === 'password'",
+        ".write": "auth != null && auth.token.email === 'mohammeddalmohsen@gmail.com' && auth.token.firebase.sign_in_provider === 'password' && !data.exists() && newData.exists()",
+        ".validate": "$event.matches(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/) && newData.hasChildren(['memberId','delivered','createdAt'])",
+        "memberId": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 10 && newData.val() % 1 === 0"
+        },
+        "delivered": {
+          ".validate": "newData.isBoolean()"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber() && newData.val() === now"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
     }
   }
 }

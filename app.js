@@ -4,7 +4,9 @@ const db = firebase.database(), auth = firebase.auth();
 const members = ["محسن","سليم","أبو محمد","مشتاق","رضوان","عبدالرحمن","علي","أبو هتان","أبو خالد","حمزة"];
 const ADMIN_EMAIL = "mohammeddalmohsen@gmail.com";
 let isAdmin = false, monthKey = "", timeReady = false, serverOffset = 0;
-let payments = {}, activations = {}, received = {}, unsubscribe = [];
+let payments = null, activations = null, received = null, unsubscribe = [];
+let authReady = false, authEpoch = 0, retryInProgress = false, automaticRetryUsed = false;
+const readErrors = new Set();
 let codesRequest = 0;
 const $ = id => document.getElementById(id);
 const serverNow = () => Date.now() + serverOffset;
@@ -12,17 +14,43 @@ function showAlert(message) { $("alertMsg").textContent = message; $("myAlert").
 function closeAlert() { $("myAlert").style.display = "none"; }
 function fail(error) { console.error(error.code || "operation_failed"); showAlert("تعذرت العملية. تحقق من الاتصال وصلاحيات Firebase، ثم حاول مجددًا."); }
 function detach() { unsubscribe.forEach(fn => fn()); unsubscribe = []; }
+function updateConnectionStatus() {
+  $("connectionStatus").hidden = readErrors.size === 0;
+}
 function listen(path, setter) {
-  const ref = db.ref(path);
-  const callback = ref.on("value", snap => { setter(snap.val() || {}); render(); }, fail);
+  const epoch = authEpoch, ref = db.ref(path);
+  const callback = ref.on("value", snap => {
+    if (epoch !== authEpoch) return;
+    readErrors.delete(path); updateConnectionStatus();
+    setter(snap.val() || {}); render();
+  }, error => {
+    if (epoch !== authEpoch) return;
+    console.warn("Database read failed:", path, error.code);
+    readErrors.add(path); updateConnectionStatus();
+    if (!automaticRetryUsed) { automaticRetryUsed = true; retryConnection(); }
+  });
   unsubscribe.push(() => ref.off("value", callback));
 }
+async function retryConnection() {
+  if (retryInProgress || !auth.currentUser) return;
+  retryInProgress = true;
+  const user = auth.currentUser, epoch = authEpoch;
+  try {
+    await user.getIdToken(true);
+    if (epoch !== authEpoch || auth.currentUser !== user) return;
+    detach();
+    db.goOffline(); db.goOnline();
+    authReady = true; monthKey = ""; syncMonth();
+  } catch (error) {
+    readErrors.add("session"); updateConnectionStatus();
+  } finally { retryInProgress = false; }
+}
 function syncMonth() {
-  if (!auth.currentUser || !timeReady) return;
+  if (!authReady || !auth.currentUser || !timeReady) return;
   const key = MonthlyCodes.monthKey(serverNow());
   if (key === monthKey) return;
   monthKey = key;
-  detach(); payments = {}; activations = {}; received = {};
+  detach(); payments = null; activations = null;
   $("monthLabel").textContent = "سجل شهر: " + monthKey;
   $("codeMonth").value = key;
   clearCodes();
@@ -37,38 +65,48 @@ db.ref(".info/serverTimeOffset").on("value", snap => {
 setInterval(syncMonth, 15000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) syncMonth(); });
 auth.onAuthStateChanged(async user => {
+  const epoch = ++authEpoch;
+  authReady = false; automaticRetryUsed = false;
   detach(); monthKey = ""; isAdmin = false; clearCodes();
+  readErrors.clear(); updateConnectionStatus();
   $("adminPanel").style.display = "block";
   $("adminControls").style.display = "none";
+  $("loginForm").style.display = "none";
+  render();
   if (!user) {
-    payments = {}; activations = {}; received = {}; render();
-    try { await auth.signInAnonymously(); } catch (error) { fail(error); }
+    try { await auth.signInAnonymously(); }
+    catch (error) { readErrors.add("session"); updateConnectionStatus(); }
     return;
   }
-  isAdmin = !user.isAnonymous && (user.email || "").toLowerCase() === ADMIN_EMAIL;
-  $("adminControls").style.display = isAdmin ? "block" : "none";
-  $("loginForm").style.display = "none";
-  syncMonth();
+  try {
+    // A restored currentUser can exist before the database has a fresh token.
+    // Never attach protected database listeners from the time-offset callback
+    // until Firebase Auth has finished initializing and refreshed that token.
+    await user.getIdToken(true);
+    if (epoch !== authEpoch || auth.currentUser !== user) return;
+    authReady = true;
+    isAdmin = !user.isAnonymous && (user.email || "").toLowerCase() === ADMIN_EMAIL;
+    $("adminControls").style.display = isAdmin ? "block" : "none";
+    syncMonth();
+  } catch (error) { readErrors.add("session"); updateConnectionStatus(); }
 });
 function toggleAdminView() {
   $("loginForm").style.display = $("loginForm").style.display === "block" ? "none" : "block";
 }
 function render() {
   $("memberTable").innerHTML = members.map((name, index) => {
-    const id = index + 1, paid = payments[id]?.status === true, active = !!activations[id];
+    const id = index + 1, paid = payments?.[id]?.status === true, active = !!activations?.[id];
     return `<tr><td><b>${name}</b></td>
-      <td class="${active ? "paid" : "not-paid"}">${active ? "مفعّل ✅" : "بانتظار التفعيل"}
-      ${!active && monthKey ? `<div><input type="text" id="in-${id}" class="code-input" aria-label="كود تفعيل ${name}" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="32"><button onclick="verify(${id})" class="btn-verify">تفعيل</button></div>` : ""}</td>
-      <td class="${paid ? "paid" : "not-paid"}">${paid ? "مدفوع ✅" : "غير مدفوع"}
-      ${isAdmin ? `<button onclick="setPayment(${id},${!paid})" class="btn-verify">${paid ? "إلغاء التأكيد" : "تأكيد ٤٠٠ €"}</button>` : ""}</td></tr>`;
+      <td class="${active ? "paid" : "not-paid"}">${activations === null ? "جارٍ التحميل…" : active ? "مفعّل ✅" : "بانتظار التفعيل"}
+      ${activations !== null && !active && authReady && monthKey ? `<div><input type="text" id="in-${id}" class="code-input" aria-label="كود تفعيل ${name}" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="32"><button onclick="verify(${id})" class="btn-verify">تفعيل</button></div>` : ""}</td>
+      <td class="${paid ? "paid" : "not-paid"}">${payments === null ? "جارٍ التحميل…" : paid ? "مدفوع ✅" : "غير مدفوع"}
+      ${isAdmin && payments !== null ? `<button onclick="setPayment(${id},${!paid})" class="btn-verify">${paid ? "إلغاء التأكيد" : "تأكيد ٤٠٠ €"}</button>` : ""}</td></tr>`;
   }).join("");
   $("payoutTable").innerHTML = members.map((name, index) => {
-    const id = index + 1, done = received[id] === true;
-    return `<tr><td>${id}. ${name}</td><td class="${done ? "paid" : "not-paid"}">${done ? "استلم ✅" : "لم يستلم"}</td><td>${isAdmin ? `<button onclick="toggleRec(${id},${done})" class="btn-verify">تبديل</button>` : ""}</td></tr>`;
+    const id = index + 1, done = received?.[id] === true;
+    return `<tr><td>${id}. ${name}</td><td class="${done ? "paid" : "not-paid"}">${received === null ? "جارٍ تحميل السجل…" : done ? "تم التسليم ✅" : "لم يتم التسليم"}</td><td>${isAdmin && received !== null ? `<button onclick="toggleRec(${id},${done})" class="btn-verify">${done ? "تغيير إلى لم يتم التسليم" : "تأكيد تم التسليم"}</button>` : ""}</td></tr>`;
   }).join("");
-  const count = members.filter((_, index) => payments[index + 1]?.status === true).length;
-  const next = members.find((_, index) => received[index + 1] !== true);
-  $("summary").textContent = "المؤكد دفعه: " + (count * 400) + " من ٤٬٠٠٠ يورو — التالي حسب القائمة: " + (next || "اكتملت الدورة");
+
 }
 async function verify(id) {
   const input = $("in-" + id);
@@ -100,8 +138,47 @@ async function setPayment(id, status) {
   } catch (error) { fail(error); }
 }
 async function toggleRec(id, done) {
-  if (!isAdmin || !confirm((done ? "إلغاء استلام " : "تأكيد تسليم ٤٬٠٠٠ يورو إلى ") + members[id - 1] + "؟")) return;
-  try { await db.ref("received_totals/" + id).set(!done); } catch (error) { fail(error); }
+  if (!isAdmin || received === null || !confirm((done ? "تغيير الحالة إلى لم يتم التسليم لـ " : "تأكيد تسليم ٤٬٠٠٠ يورو إلى ") + members[id - 1] + "؟")) return;
+  const delivered = !done, eventId = crypto.randomUUID();
+  try {
+    // Atomic: preserve the existing boolean history and record this change separately.
+    await db.ref().update({
+      ["received_totals/" + id]: delivered,
+      ["payout_events/" + eventId]: { memberId: id, delivered, createdAt: firebase.database.ServerValue.TIMESTAMP }
+    });
+  } catch (error) {
+    // Existing deployments may not yet have the new notification-event rules.
+    // Preserve the established administrator-only delivery edit in that case.
+    if (/permission.?denied/i.test(error.code || "")) {
+      try {
+        await db.ref("received_totals/" + id).set(delivered);
+        showAlert("تم حفظ حالة التسليم. إعداد إرسال إشعارات الهاتف لم يكتمل بعد.");
+      } catch (saveError) { fail(saveError); }
+    } else { fail(error); }
+    return;
+  }
+  if (!delivered) { showAlert("تم حفظ الحالة: لم يتم التسليم."); return; }
+  showAlert("تم حفظ حالة التسليم. جارٍ إرسال الإشعار للمشتركين…");
+  await sendPayoutNotification(eventId);
+}
+async function sendPayoutNotification(eventId) {
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const response = await fetch("/api/send-notification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ eventId })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.code || "notification_failed");
+    showAlert(result.sent ? "تم حفظ التسليم وقبول الإشعار للإرسال إلى المشتركين." : "تم حفظ التسليم. لا توجد أجهزة مشتركة لاستقبال الإشعار بعد.");
+  } catch (error) {
+    showAlert(error.message === "notifications_not_configured"
+      ? "تم حفظ التسليم. إرسال إشعارات الهاتف ينتظر إعداد مفتاح خدمة الإشعارات."
+      : "تم حفظ التسليم، لكن تعذر إرسال الإشعار. يمكنك إعادة إرسال الإشعار من الزر أدناه.");
+    $("retryNotification").hidden = false;
+    $("retryNotification").onclick = async () => { $("retryNotification").hidden = true; await sendPayoutNotification(eventId); };
+  }
 }
 function clearCodes() { codesRequest++; $("issuedCodes").replaceChildren(); }
 async function issueCodes() {
