@@ -146,7 +146,17 @@ async function toggleRec(id, done) {
       ["received_totals/" + id]: delivered,
       ["payout_events/" + eventId]: { memberId: id, delivered, createdAt: firebase.database.ServerValue.TIMESTAMP }
     });
-  } catch (error) { fail(error); return; }
+  } catch (error) {
+    // Existing deployments may not yet have the new notification-event rules.
+    // Preserve the established administrator-only delivery edit in that case.
+    if (/permission.?denied/i.test(error.code || "")) {
+      try {
+        await db.ref("received_totals/" + id).set(delivered);
+        showAlert("تم حفظ حالة التسليم. إعداد إرسال إشعارات الهاتف لم يكتمل بعد.");
+      } catch (saveError) { fail(saveError); }
+    } else { fail(error); }
+    return;
+  }
   if (!delivered) { showAlert("تم حفظ الحالة: لم يتم التسليم."); return; }
   showAlert("تم حفظ حالة التسليم. جارٍ إرسال الإشعار للمشتركين…");
   await sendPayoutNotification(eventId);
