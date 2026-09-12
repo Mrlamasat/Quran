@@ -1,0 +1,90 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "activation_codes": {
+      "$month": {
+        ".read": "auth != null && auth.token.email === 'mohammeddalmohsen@gmail.com' && auth.token.firebase.sign_in_provider === 'password'",
+        ".write": "auth != null && auth.token.email === 'mohammeddalmohsen@gmail.com' && auth.token.firebase.sign_in_provider === 'password' && $month.matches(/^[0-9]{4}-(0[1-9]|1[0-2])$/) && !data.exists() && newData.exists()",
+        ".validate": "newData.hasChildren(['validFrom','expiresAt','members']) && newData.child('expiresAt').val() > now && newData.child('expiresAt').val() > newData.child('validFrom').val() && newData.child('expiresAt').val() - newData.child('validFrom').val() <= 2678400000 && newData.child('validFrom').val() <= now + 2678400000",
+        "validFrom": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "expiresAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "members": {
+          ".validate": "newData.hasChildren(['1','2','3','4','5','6','7','8','9','10'])",
+          "$id": {
+            ".validate": "$id.matches(/^([1-9]|10)$/) && newData.hasChildren(['code','hash'])",
+            "code": {
+              ".validate": "newData.isString() && newData.val().matches(/^[A-HJ-NP-Z2-9]{16}$/)"
+            },
+            "hash": {
+              ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{64}$/)"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "monthly_activations": {
+      "$month": {
+        ".read": "auth != null",
+        "$id": {
+          ".write": "auth != null && $id.matches(/^([1-9]|10)$/) && $month.matches(/^[0-9]{4}-(0[1-9]|1[0-2])$/) && !data.exists() && newData.exists() && root.child('activation_codes').child($month).exists() && now >= root.child('activation_codes').child($month).child('validFrom').val() && now < root.child('activation_codes').child($month).child('expiresAt').val()",
+          ".validate": "newData.hasChildren(['codeHash','activatedAt']) && newData.child('codeHash').val() === root.child('activation_codes').child($month).child('members').child($id).child('hash').val()",
+          "codeHash": {
+            ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{64}$/)"
+          },
+          "activatedAt": {
+            ".validate": "newData.isNumber() && newData.val() === now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "payments": {
+      "$month": {
+        ".read": "auth != null",
+        "$id": {
+          ".write": "auth != null && auth.token.email === 'mohammeddalmohsen@gmail.com' && auth.token.firebase.sign_in_provider === 'password' && $id.matches(/^([1-9]|10)$/) && $month.matches(/^[0-9]{4}-(0[1-9]|1[0-2])$/) && newData.exists()",
+          ".validate": "newData.hasChildren(['status','amount','date','updatedAt'])",
+          "status": {
+            ".validate": "newData.isBoolean()"
+          },
+          "amount": {
+            ".validate": "newData.val() === 400"
+          },
+          "date": {
+            ".validate": "newData.isString()"
+          },
+          "updatedAt": {
+            ".validate": "newData.isNumber() && newData.val() === now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "received_totals": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && auth.token.email === 'mohammeddalmohsen@gmail.com' && auth.token.firebase.sign_in_provider === 'password' && $id.matches(/^([1-9]|10)$/) && newData.exists()",
+        ".validate": "newData.isBoolean()"
+      }
+    },
+    "secret_codes": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

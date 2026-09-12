@@ -16,6 +16,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
 <!-- Main JS -->
+<script src="monthly-codes.js" defer></script>
 <script src="app.js" defer></script>
 
 </head>
@@ -23,15 +24,17 @@
   <div class="container">
     <h1 onclick="toggleAdminView()">Spaarkring</h1>
     <div class="status-card">📢 القسط: 400 يورو | الموعد: 20 من الشهر</div>
-    <h3 id="monthLabel"></h3>
+    <h3 id="monthLabel">جارٍ الاتصال…</h3>
+    <p>الكود يفعّل الشهر المحدد فقط، وينتهي ببداية الشهر التالي بتوقيت UTC.</p>
+    <p id="summary" role="status"></p>
 
     <table>
-      <thead><tr><th>الاسم</th><th>الحالة</th><th></th></tr></thead>
+      <thead><tr><th>الاسم</th><th>تفعيل الشهر</th><th>دفع القسط</th></tr></thead>
       <tbody id="memberTable"></tbody>
     </table>
 
     <div class="payout-container">
-      <h3>💰 سجل استلام المبالغ</h3>
+      <h3>💰 ترتيب استلام ٤٬٠٠٠ يورو</h3>
       <table>
         <thead><tr><th>الاسم</th><th>الحالة</th><th></th></tr></thead>
         <tbody id="payoutTable"></tbody>
@@ -47,7 +50,11 @@
       </div>
       <div id="adminControls" style="display:none;">
         <p style="color:#27ae60; font-weight:bold;">أهلاً يا محمد</p>
-        <button onclick="resetMonthData()" class="btn-reset">⚠️ إعادة ضبط سجل الشهر</button>
+        <label for="codeMonth">شهر التفعيل</label>
+        <input type="month" id="codeMonth" onchange="clearCodes()">
+        <button id="issueCodes" onclick="issueCodes()" class="btn-reset">إصدار / عرض أكواد الشهر</button>
+        <p>أرسل لكل عضو رسالته الخاصة. سجلات الأشهر السابقة تبقى محفوظة.</p>
+        <div id="issuedCodes"></div>
         <button onclick="logoutAdmin()" style="background:#95a5a6;">خروج</button>
       </div>
     </div>
