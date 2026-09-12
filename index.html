@@ -6,6 +6,8 @@
 <title>Spaarkring - الجمعية</title>
 
 <link rel="stylesheet" href="style.css">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#1a73e8">
 
 <!-- OneSignal SDK -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
@@ -17,7 +19,8 @@
 
 <!-- Main JS -->
 <script src="monthly-codes.js" defer></script>
-<script src="app.js" defer></script>
+<script src="app.js?v=20260912-2" defer></script>
+<script src="notifications.js?v=20260912-2" defer></script>
 
 </head>
 <body>
@@ -25,8 +28,10 @@
     <h1 onclick="toggleAdminView()">Spaarkring</h1>
     <div class="status-card">📢 القسط: 400 يورو | الموعد: 20 من الشهر</div>
     <h3 id="monthLabel">جارٍ الاتصال…</h3>
-    <p>الكود يفعّل الشهر المحدد فقط، وينتهي ببداية الشهر التالي بتوقيت UTC.</p>
-    <p id="summary" role="status"></p>
+    <div id="connectionStatus" role="status" hidden>تعذر تحميل السجلات الآن؛ بياناتك محفوظة. <button onclick="retryConnection()">إعادة الاتصال</button></div>
+    <button id="enableNotifications" onclick="enableNotifications()">تفعيل إشعارات التسليم على هاتفي</button>
+    <p id="notificationStatus" role="status"></p>
+    <button onclick="toggleAdminView()">دخول المسؤول / إدارة التسليم</button>
 
     <table>
       <thead><tr><th>الاسم</th><th>تفعيل الشهر</th><th>دفع القسط</th></tr></thead>
@@ -45,7 +50,7 @@
       <div id="loginForm">
         <h4 style="color:#c0392b;">دخول المسؤول</h4>
         <input type="email" id="email" placeholder="الإيميل" class="admin-input" autocomplete="off">
-        <input type="password" id="pass" placeholder="كلمة المرور" class="admin-input" autocomplete="new-password">
+        <input type="password" id="pass" placeholder="كلمة المرور" class="admin-input" autocomplete="current-password">
         <button onclick="loginAdmin()" class="btn-reset">دخول</button>
       </div>
       <div id="adminControls" style="display:none;">
@@ -64,6 +69,7 @@
     <div class="alert-content">
       <p id="alertMsg"></p>
       <button onclick="closeAlert()" class="alert-btn">موافق</button>
+      <button id="retryNotification" hidden>إعادة إرسال الإشعار</button>
     </div>
   </div>
 </body>
