@@ -97,14 +97,12 @@ function render() {
   $("memberTable").innerHTML = members.map((name, index) => {
     const id = index + 1, paid = payments?.[id]?.status === true, active = !!activations?.[id];
     if (active) {
-      return `<tr><td><b>${name}</b></td><td colspan="2" class="paid">مدفوع ✅️
-        ${isAdmin && payments !== null ? `<button onclick="setPayment(${id},${!paid})" class="btn-verify">${paid ? "إلغاء التأكيد" : "تأكيد ٤٠٠ €"}</button>` : ""}</td></tr>`;
+      return `<tr><td><b>${name}</b></td><td colspan="2" class="paid">مدفوع ✅️</td></tr>`;
     }
     return `<tr><td><b>${name}</b></td>
-      <td class="${active ? "paid" : "not-paid"}">${activations === null ? "جارٍ التحميل…" : active ? "مفعّل ✅" : "بانتظار التفعيل"}
-      ${activations !== null && !active && authReady && monthKey ? `<div><input type="text" id="in-${id}" class="code-input" aria-label="كود تفعيل ${name}" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="32"><button onclick="verify(${id})" class="btn-verify">تفعيل</button></div>` : ""}</td>
-      <td class="${paid ? "paid" : "not-paid"}">${payments === null ? "جارٍ التحميل…" : paid ? "مدفوع ✅" : "غير مدفوع"}
-      ${isAdmin && payments !== null ? `<button onclick="setPayment(${id},${!paid})" class="btn-verify">${paid ? "إلغاء التأكيد" : "تأكيد ٤٠٠ €"}</button>` : ""}</td></tr>`;
+      <td${paid ? "" : ' colspan="2"'}>${activations === null ? "جارٍ التحميل…" : ""}
+      ${activations !== null && authReady && monthKey ? `<div><input type="text" id="in-${id}" class="code-input" aria-label="كود تفعيل ${name}" placeholder="أدخل الكود" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="32"><button onclick="verify(${id})" class="btn-verify">تفعيل</button></div>` : ""}</td>
+      ${paid ? `<td class="paid">مدفوع ✅️${isAdmin ? `<button onclick="setPayment(${id},false)" class="btn-verify">إلغاء التأكيد</button>` : ""}</td>` : ""}</tr>`;
   }).join("");
   $("payoutTable").innerHTML = members.map((name, index) => {
     const id = index + 1, done = received?.[id] === true;
