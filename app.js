@@ -96,6 +96,10 @@ function toggleAdminView() {
 function render() {
   $("memberTable").innerHTML = members.map((name, index) => {
     const id = index + 1, paid = payments?.[id]?.status === true, active = !!activations?.[id];
+    if (active) {
+      return `<tr><td><b>${name}</b></td><td colspan="2" class="paid">مدفوع ✅️
+        ${isAdmin && payments !== null ? `<button onclick="setPayment(${id},${!paid})" class="btn-verify">${paid ? "إلغاء التأكيد" : "تأكيد ٤٠٠ €"}</button>` : ""}</td></tr>`;
+    }
     return `<tr><td><b>${name}</b></td>
       <td class="${active ? "paid" : "not-paid"}">${activations === null ? "جارٍ التحميل…" : active ? "مفعّل ✅" : "بانتظار التفعيل"}
       ${activations !== null && !active && authReady && monthKey ? `<div><input type="text" id="in-${id}" class="code-input" aria-label="كود تفعيل ${name}" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="32"><button onclick="verify(${id})" class="btn-verify">تفعيل</button></div>` : ""}</td>
@@ -120,7 +124,7 @@ async function verify(id) {
     await db.ref("monthly_activations/" + key + "/" + id).set({
       codeHash, activatedAt: firebase.database.ServerValue.TIMESTAMP
     });
-    showAlert("✅ تم تفعيل " + members[id - 1] + " لشهر " + key + ". التفعيل لا يُعد تأكيدًا للدفع.");
+    showAlert("✅ تم قبول رمز " + members[id - 1] + " لشهر " + key + ".");
   } catch (error) {
     showAlert("لم يتم التفعيل. الكود غير صحيح، أو انتهت صلاحيته، أو استُخدم سابقًا. تحقق أيضًا من اتصالك.");
   }
